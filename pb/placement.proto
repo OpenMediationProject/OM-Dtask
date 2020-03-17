@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+import "common.proto";
+option java_package = "com.adtiming.om.pb";
+option java_outer_classname = "PlacementPB";
+
+message Placement {
+    int32 id = 1; // 自增ID
+    int32 publisher_id = 2; // 发布商ID
+    int32 pub_app_id = 3; // 发布商APP_ID
+    string app_id = 4;
+    int32 plat = 5;
+    AdType ad_type = 6;
+    bool main_placement = 7; // 是否是主广告位
+    string ic_url = 8; // Incentivized Callback URL
+
+    bool fan_out = 9; // SDK并串行FanOut模式开关, 0:OFF,1:ON
+    bool allow_hb = 10; // HeadBidding 状态, 0:OFF, 1:ON
+
+    int32 frequency_cap = 11;
+    int32 frequency_unit = 12;
+    int32 frequency_interval = 13;
+    int32 preload_timeout = 22;
+//    int32 auto_preloading = 23; // 是否预加载,默认开启,0:关闭预加载;1:开启
+    int32 batch_size = 24;
+    int32 inventory_count = 25;
+    int32 inventory_interval = 26;
+    int32 reload_interval = 27;
+
+    float floor_price = 28; // BID Price, decimal(8,3)
+    map<string, float> country_floor_price = 29; // country_floor_price
+
+    //bool ab_test = 30; //ABTest开关, 0:OFF,1:ON
+
+    repeated Scene scenes = 30; // 场景列表
+
+    // for filter
+    string osv_max = 31;
+    string osv_min = 32;
+    repeated string osv_whitelist = 33;
+    repeated string osv_blacklist = 34;
+    repeated string make_whitelist = 35;
+    repeated string make_blacklist = 36;
+    repeated string brand_whitelist = 37;
+    repeated string brand_blacklist = 38;
+    repeated string model_whitelist = 39;
+    repeated string model_blacklist = 40;
+    repeated string did_blacklist = 41;
+    repeated string sdkv_blacklist = 42;
+
+    map<string, CountrySettings> country_settings = 43;
+
+    message CountrySettings {
+        map<int32, int32> period = 1;
+        float floor_price = 2; // BID Price, decimal(8,3)
+        float max_price = 3;
+    }
+
+}
+
+message Scene {
+    int32 id = 1;
+    int32 placement_id = 2;
+    string name = 3;
+    int32 frequency_cap = 4;
+    int32 frequency_unit = 5;
+    int32 is_default = 6;
+}
+
+message PlacementAbTest {
+    int32 placement_id = 1;
+    int32 a_per = 2;
+    int32 b_per = 3;
+    int32 a_rule_id = 4;
+    int32 b_rule_id = 5;
+    int32 segment_id = 6;
+    string country = 7;
+}

@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+option java_package = "com.adtiming.om.pb";
+option java_outer_classname = "AdNetworkPB";
+import "common.proto";
+
+message AdNetwork {
+    int32 id = 1; // adn id
+    string name = 2; //
+    string class_name = 3; // SDK className prefix, used by /conf?v7
+    int32 type = 4; // 二进制,0:Banner,1:Native,2:Video,3:Interstitial;
+    string sdk_version = 5;
+}
+
+message AdNetworkApp {
+    int32 id = 1; // 自增ID
+    int32 adn_id = 2; //
+    int32 pub_app_id = 3;
+    string app_key = 4; //
+    //ABTest abt = 5; // ab_test_mode
+    repeated AdNetworkAppBlockRule block_rules = 6;
+}
+
+message AdNetworkAppBlockRule {
+    int32 id = 1;
+    int32 pub_app_id = 2;
+    int32 adn_id = 3; //
+    string sdk_version = 4;
+    string osv_max = 5;
+    string osv_min = 6;
+    repeated string make_device_blacklist = 7;
+    repeated string brand_model_blacklist = 8;
+    string app_version = 9;
+}
+
+message Instance {
+    int32 id = 1; // 自增ID
+    int32 pub_app_id = 2; //
+    int32 placement_id = 3; //
+    int32 adn_id = 4;
+    string placement_key = 5; //
+    string app_unit_id = 6;
+    string osv_max = 7;
+    string osv_min = 8;
+    repeated string make_whitelist = 9;
+    repeated string make_blacklist = 10;
+    repeated string brand_whitelist = 11;
+    repeated string brand_blacklist = 12;
+    repeated string model_whitelist = 13;
+    repeated string model_blacklist = 14;
+    int32 frequency_cap = 15;
+    int32 frequency_unit = 16;
+    int32 frequency_interval = 17;
+    bool hb_status = 18; // HeadBidding 开关
+    //ABTest abt = 19; // ab_test_mode
+    float ecpm = 19; // SDK-BID ecpm固定价分成
+
+    map<string, CountrySettings> country_settings = 20;
+
+    message CountrySettings {
+        map<int32, int32> period = 1;
+    }
+
+}
+
+message InstanceRule {
+    int32 id = 1;
+    int32 publisher_id = 2;
+    int32 pub_app_id = 3;
+    int32 placement_id = 4;
+    string country = 5;
+    int32 sort_type = 6; //排序类型,0:使用权重;1:使用绝对优先级
+    ABTest abt = 7;
+    int32 segment_id = 8;
+    int32 auto_switch = 9; //自动优化开关
+    map<int32, int32> instance_weight = 10;
+    int32 priority = 11;
+}
+
+message Segment {
+    int32 id = 1;
+    int32 placement_id = 2;
+    string country = 3;
+    int32 frequency = 4; // 用户当天展现次数
+    int32 con_type = 5; // 连接类型,二进制,从右到左(低位起) wifi,2G,3G,4G
+    repeated string brand_whitelist = 6;
+    repeated string brand_blacklist= 7;
+    repeated string model_whitelist = 8;
+    repeated string model_blacklist = 9;
+    float iap_min = 10;
+    float iap_max = 11;
+
+}

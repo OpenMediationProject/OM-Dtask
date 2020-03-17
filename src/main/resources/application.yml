@@ -1,0 +1,70 @@
+server:
+  port: 19012
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+  servlet:
+    application-display-name: om-dtask
+    session:
+      timeout: 1m
+  tomcat:
+    basedir: .
+    accesslog:
+      enabled: true
+      prefix: access
+      buffered: false
+      directory: log
+      rename-on-rotate: true
+      file-date-format: .yyyyMMdd
+
+spring:
+  ## scheduling
+  task:
+    scheduling:
+      pool:
+        size: 30
+  ## freemarker
+  freemarker:
+    charset: UTF-8
+    settings:
+      dateFormat: yyyy-MM-dd
+      datetime_format: yyyy-MM-dd HH:mm:ss
+      whitespaceStripping: true
+      numberFormat: 0.##
+  ## jackson
+  jackson:
+    parser:
+      ALLOW_SINGLE_QUOTES: true
+      ALLOW_UNQUOTED_FIELD_NAMES: true
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
+    default-property-inclusion: non_null
+    generator:
+      AUTO_CLOSE_TARGET: false
+      IGNORE_UNKNOWN: true
+  ## thymeleaf
+  thymeleaf:
+    cache: true
+    mode: text
+    encoding: UTF-8
+    prefix: classpath:/templates/
+    suffix: .sql
+
+  profiles:
+    active: dev
+
+management:
+  endpoint:
+    httptrace:
+      enabled: false
+  endpoints:
+    web:
+      base-path: /holy
+      exposure:
+        include: metrics,loggers,threaddump
+
+aws:
+  athena:
+    database: open_mediation
+    data-dir: data/aws

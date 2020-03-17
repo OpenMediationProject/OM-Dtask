@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+option java_package = "com.adtiming.om.pb";
+option java_outer_classname = "PubAppPB";
+
+message PublisherApp {
+    int32 id = 1; // 自增ID
+    int32 publisher_id = 2; //
+    int32 plat = 3; // 0:iOS,1:Android
+    string app_id = 4; //
+    string app_name = 5; //
+    string app_key = 6; //
+    string bundle_id = 7;
+    int32 create_time = 8; // 创建时间,单位秒
+    repeated int32 event_ids = 9;
+    repeated PublisherAppBlockRule block_rules = 10;
+    //repeated Segment segments = 11;
+}
+
+message PublisherAppBlockRule {
+    int32 id = 1;
+    int32 pub_app_id = 2;
+    string sdk_version = 3;
+    string app_version = 4;
+    string osv_max = 5;
+    string osv_min = 6;
+    repeated string make_device_blacklist = 7;
+    repeated string brand_model_blacklist = 8;
+}
+
+/*message Segment {
+    int32 id = 1;
+    int32 pub_app_id = 2;
+    int32 frequency = 3; // 用户当天展现次数
+    int32 con_type = 4; // 连接类型,二进制,从右到左(低位起) wifi,2G,3G,4G
+    string brand = 5;
+    string model = 6;
+    float iap_min = 7;
+    float iap_max = 8;
+    int32 priority = 9; //优先级
+}*/
+
+/*message PubAppAbTest {
+    int32 publisher_id = 1;
+    int32 pub_app_id = 2;
+    int32 a_per = 3;
+    int32 b_per = 4;
+}*/
