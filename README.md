@@ -45,7 +45,7 @@ put "om-dtask.conf" and "om-dtask.jar" in the same directory.
 
 ```shell script
 mkdir -p log
-./om-server.jar start
+./om-dtask.jar start
 ```
 
 ### Logs
@@ -57,13 +57,13 @@ tail -f log/stdout.log
 ### Stop
 
 ```shell script
-./om-server.jar stop
+./om-dtask.jar stop
 ```
 
 ### Restart
 
 ```shell script
-./om-server.jar restart
+./om-dtask.jar restart
 ```
 
 
