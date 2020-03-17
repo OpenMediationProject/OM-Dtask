@@ -2,7 +2,7 @@
 
 OpenMediation Data Task is a Data Process Center.  
 This service should run singleton.  
-It provide api and pb data for [OM-Server](../OM-Server)
+It provide api and pb data for [OM-Server](https://github.com/AdTiming/OM-Server)
 
 
 ## Usage
