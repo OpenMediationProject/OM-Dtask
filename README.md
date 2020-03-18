@@ -15,8 +15,9 @@ You can package using [mvn](https://maven.apache.org/).
 mvn clean package -Dmaven.test.skip=true
 ```
 
-After packaging is complete, you can find "on-dtask.jar" in the directory "target".
+After packaging is complete, you can find "on-dtask.jar" in the directory "target".  
 "om-dtask.jar" is a executable jar, see [springboot](https://spring.io/projects/spring-boot/)
+
 
 ### Configuration
 
@@ -42,6 +43,12 @@ LOG_FILENAME=stdout.log
 ### Run
 
 put "om-dtask.conf" and "om-dtask.jar" in the same directory.
+
+```
+├── on-dtask.conf
+├── on-dtask.jar
+└── log
+```
 
 ```shell script
 mkdir -p log

@@ -9,6 +9,7 @@ import com.adtiming.om.dtask.dto.ReportBuilderDTO;
 import com.adtiming.om.dtask.dto.ReportBuilderTaskDTO;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.util.TypeUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -80,7 +81,7 @@ public class ReportBuilderService {
         m.put("impr", "Impressions");
         m.put("click", "Clicks");
         m.put("ctr", "CTR");
-        m.put("revenue", "Revenue");
+        m.put("cost", "Revenue");
         m.put("ecpm", "eCPM");
         m.put("dau", "DAU");
         m.put("impr_dau", "Impressions per DAU");
@@ -101,11 +102,9 @@ public class ReportBuilderService {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private MailSender mailSender;
-
     @Scheduled(cron = "0 */10 * * * ?", zone = "UTC")
     public void scheduleReport() {
-        mailSender = getMailSender();
+        MailSender mailSender = getMailSender();
         if (mailSender == null) {
             return;
         }
@@ -114,10 +113,10 @@ public class ReportBuilderService {
         for (ReportBuilderDTO dto : builders) {
             buildTask(dto);
         }
-        doTasks(builders);
+        doTasks(builders, mailSender);
     }
 
-    private MailSender getMailSender() {
+    MailSender getMailSender() {
         String reportSender = dictManager.val("/om/report_sender");
         if (StringUtils.isBlank(reportSender)) {
             LOG.error("No report sender set yet");
@@ -130,7 +129,7 @@ public class ReportBuilderService {
         }
     }
 
-    public void doTasks(List<ReportBuilderDTO> builders) {
+    public void doTasks(List<ReportBuilderDTO> builders, MailSender mailSender) {
         Map<Integer, ReportBuilderDTO> builderMap = new HashMap<>(builders.size());
         builders.forEach(o -> builderMap.put(o.getId(), o));
 
@@ -144,7 +143,7 @@ public class ReportBuilderService {
                 int builderId = task.getBuilderId();
                 ReportBuilderDTO builder = builderMap.get(builderId);
                 if (builder != null) {
-                    doTask(task, builder);
+                    doTask(task, builder, mailSender);
                 } else {
                     LOG.error("task not found, builderId: {}", builderId);
                     String updateTaskSql = "update om_report_builder_task set status = ?, reparation_count = ? where id = ?";
@@ -156,7 +155,7 @@ public class ReportBuilderService {
         }
     }
 
-    public void doTask(ReportBuilderTaskDTO task, ReportBuilderDTO builder) {
+    public void doTask(ReportBuilderTaskDTO task, ReportBuilderDTO builder, MailSender mailSender) {
         try {
             builder.setTaskDay(task.getDay());
             List<String> reportLines = buildReport(builder);
@@ -164,7 +163,7 @@ public class ReportBuilderService {
                 throw new RuntimeException("Get report null");
             }
             String result = StringUtils.join(reportLines, '\n');
-            boolean sendStatus = sendToUser(builder, result);
+            boolean sendStatus = sendToUser(builder, result, mailSender);
             if (sendStatus) {
                 String updateTaskSql = "update om_report_builder_task set status = ?, reparation_count = ?, report_line_size = ?  where id = ?";
                 jdbcTemplate.update(updateTaskSql, 1, task.getReparationCount() + 1, reportLines.size() - 1, task.getId());
@@ -188,7 +187,7 @@ public class ReportBuilderService {
         }
     }
 
-    boolean sendToUser(ReportBuilderDTO dto, String report) {
+    boolean sendToUser(ReportBuilderDTO dto, String report, MailSender mailSender) {
         try {
             HtmlEmail email = new HtmlEmail();
             email.setSSLOnConnect(mailSender.isSsl());
@@ -274,18 +273,28 @@ public class ReportBuilderService {
             List<Map<String, Object>> lRReport = getLRReport(builder);
             List<Map<String, Object>> dauReport = getDauReport(builder);
 
+            // [dimension, dimensionValue, dimensionLabel]
+            Map<String, Map<Object, Object>> dimensionLables = new HashMap<>();
+
             Map<Object, Optional<Map<String, Object>>> mergeResult = Stream.concat(
                     adNetWorkReport.stream(), Stream.concat(lRReport.stream(), dauReport.stream()))
                     .collect(Collectors.groupingBy(report -> {
                         List<Object> keys = new ArrayList<>();
                         for (String dim : builder.getDimensionSet()) {
-                            keys.add(report.get(dim));
+                            Object dimValue = report.get(dim);
+                            keys.add(dimValue);
+                            if (dim.endsWith("_id")) {
+                                dimensionLables.computeIfAbsent(dim, k -> new HashMap<>())
+                                        .put(TypeUtils.castToLong(dimValue), dimValue);
+                            }
                         }
                         return StringUtils.join(keys, SPLIT_CHAR);
                     }, Collectors.reducing((a, b) -> {
                         a.putAll(b);
                         return a;
                     })));
+
+            fillDimensionLables(dimensionLables);
 
             List<Map<String, Object>> results = new ArrayList<>(mergeResult.size());
             mergeResult.forEach((k, opt) -> opt.ifPresent(results::add));
@@ -297,7 +306,7 @@ public class ReportBuilderService {
                 });
             }
 
-            List<String> reportLines = buildLines(builder, results);
+            List<String> reportLines = buildLines(builder, results, dimensionLables);
             LOG.info("Report lines {}", reportLines.size());
             return reportLines;
         } catch (Exception e) {
@@ -306,7 +315,39 @@ public class ReportBuilderService {
         return null;
     }
 
-    private List<String> buildLines(ReportBuilderDTO builder, List<Map<String, Object>> results) {
+    private void fillDimensionLables(Map<String, Map<Object, Object>> dimensionLables) {
+        dimensionLables.forEach((dim, vl) -> {
+            if (vl.isEmpty()) {
+                return;
+            }
+            String ids = StringUtils.join(vl.keySet(), ',');
+            String sql = null;
+            switch (dim) {
+                case "adn_id":
+                    sql = "select id,class_name label from om_adnetwork where id in (" + ids + ")";
+                    break;
+                case "pub_app_id":
+                    sql = "select id,app_id label from om_publisher_app where id in (" + ids + ")";
+                    break;
+                case "placement_id":
+                    sql = "select id,name label from om_placement where id in (" + ids + ")";
+                    break;
+                case "instance_id":
+                    sql = "select id,name label from om_instance where id in (" + ids + ")";
+                    break;
+                default:
+                    break;
+            }
+            if (sql != null) {
+                jdbcTemplate.query(sql, rs -> {
+                    vl.put(rs.getLong("id"), rs.getString("label"));
+                });
+            }
+        });
+    }
+
+    private List<String> buildLines(ReportBuilderDTO builder, List<Map<String, Object>> results,
+                                    Map<String, Map<Object, Object>> dimensionLables) {
 
         Set<String> dimensionSet = builder.getDimensionSet();
         Set<String> metricSet = builder.getMetricSet();
@@ -342,7 +383,7 @@ public class ReportBuilderService {
             long click = row.getLongValue("click");
             long dau = row.getLongValue("dau");
             long deu = row.getLongValue("deu");
-            BigDecimal revenue = row.getBigDecimal("revenue");
+            BigDecimal revenue = row.getBigDecimal("cost");
 
             row.put("request", request);
             row.put("filled", filled);
@@ -397,7 +438,12 @@ public class ReportBuilderService {
 
             // put values into line
             for (String dimension : dimensionSet) {
-                putValue(lineValues, row.get(dimension), "");
+                Object v = row.get(dimension);
+                Map<Object, Object> vl = dimensionLables.get(dimension);
+                if (vl != null && v != null) {
+                    v = vl.getOrDefault(TypeUtils.castToLong(v), v);
+                }
+                putValue(lineValues, v, "");
             }
             for (String metric : metricSet) {
                 putValue(lineValues, row.get(metric), "0");
@@ -415,7 +461,7 @@ public class ReportBuilderService {
     List<Map<String, Object>> getAdNetWorkReport(ReportBuilderDTO builder) {
         String sumClause = " sum(api_request) as api_request,sum(api_filled) as api_filled,sum(api_click) as click, " +
                 "sum(api_impr) as impr, sum(api_video_start) as api_video_start,sum(api_video_complete) as " +
-                "api_video_complete, sum(revenue) as revenue ";
+                "api_video_complete, sum(revenue) as revenue, sum(cost) as cost ";
 
         String reportSql = buildStatSql(builder, "stat_adnetwork", sumClause);
         LOG.info("Ad network report sql {}", reportSql);
