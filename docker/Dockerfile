@@ -2,10 +2,11 @@ FROM adtiming/omjava
 MAINTAINER openmediation
 ENV SYSTEMNAME "omsystem"
 ENV SERVERNAME "om-dtask"
+ARG JAR_FILE
 RUN mkdir -p ${SERVERNAME}/cache
 ADD docker-entrypoint.sh /
 ADD application-loc.yml /${SERVERNAME}/
-ADD ../target/om-dtask.jar /${SERVERNAME}/
+COPY om-dtask.jar /${SERVERNAME}/om-dtask.jar
 ADD rsync /bin/
 ADD rsyncd.conf /etc/
 WORKDIR /
