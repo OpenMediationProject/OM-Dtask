@@ -6,7 +6,7 @@ ARG JAR_FILE
 RUN mkdir -p ${SERVERNAME}/cache
 ADD docker-entrypoint.sh /
 ADD application-loc.yml /${SERVERNAME}/
-COPY om-dtask.jar /${SERVERNAME}/om-dtask.jar
+COPY ${JAR_FILE} /${SERVERNAME}/om-dtask.jar
 ADD rsync /bin/
 ADD rsyncd.conf /etc/
 WORKDIR /
