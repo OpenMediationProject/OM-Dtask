@@ -5,8 +5,7 @@ ENV SERVERNAME "om-dtask"
 RUN mkdir -p ${SERVERNAME}/cache
 ADD docker-entrypoint.sh /
 ADD application-loc.yml /${SERVERNAME}/
-ARG JAR_FILE
-ADD ${JAR_FILE} /${SERVERNAME}/
+ADD ../target/om-dtask.jar /${SERVERNAME}/
 ADD rsync /bin/
 ADD rsyncd.conf /etc/
 WORKDIR /
