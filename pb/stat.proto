@@ -1,0 +1,58 @@
+//standard data types: bool, int32, int64, float, double, and string.
+
+//版本历史
+//2017-09-26 第一版
+
+syntax = "proto3";
+
+option java_package = "com.adtiming.om.pb";
+option java_outer_classname = "StatPB";
+
+// For Placement FloorPrice fix
+// 取 Placement eCPM, Country+Placement, imp>2000, 最近7天
+message PlacementEcpm {
+    int32 placement_id = 1;
+    string country = 2;
+    float ecpm = 3;
+}
+
+// For Placement FloorPrice fix
+// 取全局Country+AdType 平均eCPM
+message CountryAdTypeEcpm {
+    string country = 1;
+    int32 ad_type = 2;
+    float ecpm = 3;
+}
+
+// For Auto Waterfall 数据
+message AdNetworkEcpm {
+    int32 adn_id = 1;
+    float ecpm = 2;
+}
+
+// For Auto Waterfall 数据
+message AdNetworkCountryEcpm {
+    int32 adn_id = 1;
+    string country = 2;
+    float ecpm = 3;
+}
+
+// For Auto Waterfall 数据
+message AdNetworkAdTypeCountryEcpm {
+    int32 mediation_id = 1;
+    int32 placement_type = 2;
+    string country = 3;
+    float ecpm = 4;
+}
+
+message InstanceCountryEcpm {
+    int32 instance_id = 1;
+    string country = 2;
+    float ecpm = 3;
+}
+
+message PlacementCountryEcpm {
+    int32 placement_id = 1;
+    string country = 2;
+    float ecpm = 3;
+}

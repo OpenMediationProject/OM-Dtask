@@ -1,0 +1,22 @@
+//standard data types: bool, int32, int64, float, double, and string.
+
+//版本历史
+//2017-09-26 第一版
+
+syntax = "proto3";
+
+option java_package = "com.adtiming.om.pb";
+option java_outer_classname = "DevPB";
+import "common.proto";
+
+message SdkDevApp {
+    int32 publisher_id = 1;
+    int32 pub_app_id = 2;
+    int32 adn_id = 3;
+}
+
+message SdkDevDevice {
+    int32 publisher_id = 1;
+    string device_id = 2;
+    ABTest abt = 3;
+}
