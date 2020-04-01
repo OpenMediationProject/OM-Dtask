@@ -1,16 +1,24 @@
+FROM adtiming/ombuilder as builder
+ARG BUILDER_URL="https://github.com/AdTiming/OM-Dtask.git"
+ARG BUILDER_DIR="OM-Dtask"
+RUN git clone ${BUILDER_URL} && \
+    cd ${BUILDER_DIR} && \
+    mvn clean package -Dmaven.test.skip=true
+
 FROM adtiming/omjava
 MAINTAINER openmediation
 ENV SYSTEMNAME "omsystem"
 ENV SERVERNAME "om-dtask"
+ARG GET_BUILDER_DIR="/data/OM-Dtask"
 RUN mkdir -p ${SERVERNAME}/cache
 ADD docker-entrypoint.sh /
 ADD application-loc.yml /${SERVERNAME}/
-ADD om-dtask.jar /${SERVERNAME}/
 ADD rsync /bin/
 ADD rsyncd.conf /etc/
+COPY --from=builder ${GET_BUILDER_DIR}/target/${SERVERNAME}.jar /${SERVERNAME}/
 WORKDIR /
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost:19012/ || exit 1
-EXPOSE 19012
+EXPOSE 19012 873
 ENTRYPOINT ["/docker-entrypoint.sh"] 
 CMD ["om-dtask"]
