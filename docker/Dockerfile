@@ -10,7 +10,7 @@ MAINTAINER openmediation
 ENV SYSTEMNAME "omsystem"
 ENV SERVERNAME "om-dtask"
 ARG GET_BUILDER_DIR="/data/OM-Dtask"
-RUN mkdir -p ${SERVERNAME}/cache
+RUN mkdir -p ${SERVERNAME}/{cache,log}
 ADD docker-entrypoint.sh /
 ADD application-loc.yml /${SERVERNAME}/
 ADD rsync /bin/
