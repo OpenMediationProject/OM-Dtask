@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @RestController
 public class APIController {
@@ -66,14 +65,18 @@ public class APIController {
 
             @Override
             public void run() {
-                log.info("backfill common report, beginDateHour: {}, endDateHour: {}, start", beginDateHour, endDateHour);
-                while (beginDateTime.isBefore(endDateTime)) {
-                    log.info("backfill common report, deal: {}", beginDateTime);
-                    dcenterJob.addPartition(beginDateTime);
-                    dcenterJob.commonReport(beginDateTime);
-                    beginDateTime = beginDateTime.plusHours(1);
+                try {
+                    log.info("backfill common report, beginDateHour: {}, endDateHour: {}, start", beginDateHour, endDateHour);
+                    while (beginDateTime.isBefore(endDateTime)) {
+                        log.info("backfill common report, deal: {}", beginDateTime);
+                        dcenterJob.addPartition(beginDateTime);
+                        dcenterJob.commonReport(beginDateTime);
+                        beginDateTime = beginDateTime.plusHours(1);
+                    }
+                    log.info("backfill common report, beginDateHour: {}, endDateHour: {}, complete", beginDateHour, endDateHour);
+                } catch (Exception e) {
+                    log.error("backfill common report error", e);
                 }
-                log.info("backfill common report, beginDateHour: {}, endDateHour: {}, complete", beginDateHour, endDateHour);
             }
         }).start();
         return ResponseEntity.ok("success");
@@ -93,13 +96,17 @@ public class APIController {
 
             @Override
             public void run() {
-                log.info("backfill user report, beginDate: {}, endDate: {}, start", beginDate, endDate);
-                while (beginLocalDate.isBefore(endLoaclDate)) {
-                    log.info("backfill user report, deal: {}", beginLocalDate);
-                    dcenterJob.userReport(beginLocalDate);
-                    beginLocalDate = beginLocalDate.plusDays(1);
+                try {
+                    log.info("backfill user report, beginDate: {}, endDate: {}, start", beginDate, endDate);
+                    while (beginLocalDate.isBefore(endLoaclDate)) {
+                        log.info("backfill user report, deal: {}", beginLocalDate);
+                        dcenterJob.userReport(beginLocalDate);
+                        beginLocalDate = beginLocalDate.plusDays(1);
+                    }
+                    log.info("backfill user report, beginDate: {}, endDate: {}, complete", beginDate, endDate);
+                } catch (Exception e) {
+                    log.error("backfill user report error", e);
                 }
-                log.info("backfill user report, beginDate: {}, endDate: {}, complete", beginDate, endDate);
             }
         }).start();
         return ResponseEntity.ok("success");
