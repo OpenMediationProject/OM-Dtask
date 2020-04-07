@@ -58,6 +58,7 @@ ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH
     SERDEPROPERTIES (
         'serialization.format' = '1',
+        'case.insensitive'='false',
         'mapping.req_id' = 'reqId',
         'mapping.server_ts' = 'serverTs',
         'mapping.publisher_id' = 'publisherId',
