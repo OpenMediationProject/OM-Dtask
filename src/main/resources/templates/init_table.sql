@@ -56,7 +56,13 @@ CREATE EXTERNAL TABLE IF NOT EXISTS lr (
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH
-    SERDEPROPERTIES ('serialization.format' = '1' )
+    SERDEPROPERTIES (
+        'serialization.format' = '1',
+        'ColumnToJsonKeyMappings' = {
+            "publisher_id": "publisherId",
+            "pub_app_id": "pubAppId"
+        }
+    )
     LOCATION 's3://[(${s3Bucket})]/[(${tableDataPath})]/[(${tableName})]/'
     TBLPROPERTIES ('has_encrypted_data'='false')
 ;
