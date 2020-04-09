@@ -2,6 +2,11 @@ FROM adtiming/omjava
 MAINTAINER openmediation
 ENV SYSTEMNAME "omsystem"
 ENV SERVERNAME "om-dtask"
+ENV OMYML_DBADDRESS ""
+ENV OMYML_DBNAME ""
+ENV OMYML_USERNAME ""
+ENV OMYML_PASSWORD ""
+ENV OMRSYNC_ALLOWHOSTS ""
 ARG JAR_FILE
 RUN mkdir -p ${SERVERNAME}/cache
 ADD docker/docker-entrypoint.sh /
