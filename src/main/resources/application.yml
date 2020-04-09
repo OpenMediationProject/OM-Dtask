@@ -14,7 +14,7 @@ server:
       enabled: true
       prefix: access
       buffered: false
-      directory: log
+      directory: /data/om-dtask/log
       rename-on-rotate: true
       file-date-format: .yyyyMMdd
 
@@ -67,4 +67,4 @@ management:
 aws:
   athena:
     database: open_mediation
-    data-dir: data/aws
+    data-dir: /data/om-dtask/data/aws
