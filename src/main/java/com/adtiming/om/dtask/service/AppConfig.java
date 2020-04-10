@@ -7,9 +7,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import java.io.File;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -28,13 +30,19 @@ public class AppConfig {
 
     @Value("${app.env}")
     public AppEnv appEnv;
+    @Value("${app.cache-path}")
+    public String cachePath;
 
-    public final File dir = new File("cache");
+    public File dir;
 
     private boolean shouldStop = false;
 
     @PostConstruct
     private void init() {
+        if (StringUtils.hasText(cachePath)) {
+            cachePath = "cache";
+        }
+        dir = new File(cachePath);
         if (!dir.exists() && dir.mkdir())
             log.info("mkdir {}", dir);
     }
@@ -42,6 +50,10 @@ public class AppConfig {
     @PreDestroy
     private void destroy() {
         shouldStop = true;
+    }
+
+    public File getDir() {
+        return dir;
     }
 
     public boolean isProd() {

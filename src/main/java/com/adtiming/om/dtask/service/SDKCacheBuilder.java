@@ -32,12 +32,10 @@ public class SDKCacheBuilder extends PbBuiler {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final File dir = new File("cache");
-
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
-        if (!dir.exists() && dir.mkdir())
-            log.info("mkdir {}", dir);
+        if (!cfg.getDir().exists() && cfg.getDir().mkdir())
+            log.info("mkdir {}", cfg.getDir());
         /*if (!cfg.isProd())
             return;*/
         long start = System.currentTimeMillis();
