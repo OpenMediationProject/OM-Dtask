@@ -29,7 +29,7 @@ MODE=service
 APP_NAME=om-dtask
 #JAVA_HOME=/usr/local/java/jdk
 JAVA_OPTS="-Dapp=$APP_NAME\
- -Duser.timezone=UTC\
+ -Duser.timezone=UTC+8\
  -Xmx3g\
  -Xms1g\
  -server"
