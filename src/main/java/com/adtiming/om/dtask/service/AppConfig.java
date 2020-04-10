@@ -39,7 +39,7 @@ public class AppConfig {
 
     @PostConstruct
     private void init() {
-        if (StringUtils.hasText(cachePath)) {
+        if (!StringUtils.hasText(cachePath)) {
             cachePath = "cache";
         }
         dir = new File(cachePath);
