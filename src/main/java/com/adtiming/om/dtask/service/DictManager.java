@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +31,9 @@ public class DictManager {
     private Map<String, Dict> pathMap;
     private Map<Integer, List<Dict>> pidMap;
 
-    private final File cacheDir = new File("cache");
+    @Autowired
+    private AppConfig appConfig;
+
     private String lastMd5;
 
     @PostConstruct
@@ -40,7 +43,7 @@ public class DictManager {
 
     @Scheduled(fixedDelay = 60000, initialDelay = 60000)
     private void reloadCache() {
-        File file = new File(cacheDir, "om_dict.gz");
+        File file = new File(appConfig.getDir(), "om_dict.gz");
         if (!file.exists())
             return;
         String md5 = Encrypter.md5(file);
