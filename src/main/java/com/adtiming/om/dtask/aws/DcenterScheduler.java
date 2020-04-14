@@ -24,7 +24,7 @@ public class DcenterScheduler {
     @Resource
     private DcenterJob dcenterJob;
 
-    @Scheduled(cron = "0 17 * * * ?", zone = "UTC")
+    @Scheduled(cron = "0 17 * * * ?")
     public void hourly() {
         if (!cfg.isProd()) {
             return;
@@ -32,12 +32,12 @@ public class DcenterScheduler {
         if (awsConfig.isDisabled()) {
             return;
         }
-        LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(-1);
+        LocalDateTime executeDateTime = LocalDateTime.now().plusHours(-1);
         dcenterJob.addPartition(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
     }
 
-    @Scheduled(cron = "0 5 1 * * ?", zone = "UTC")
+    @Scheduled(cron = "0 5 1 * * ?")
     public void daily() {
         if (!cfg.isProd()) {
             return;
@@ -45,7 +45,7 @@ public class DcenterScheduler {
         if (awsConfig.isDisabled()) {
             return;
         }
-        LocalDate executeDate = LocalDate.now(ZoneOffset.UTC).plusDays(-1);
+        LocalDate executeDate = LocalDate.now().plusDays(-1);
         dcenterJob.userReport(executeDate);
         executeDate = executeDate.plusDays(-7);
         dcenterJob.clearDataDirectory(executeDate);

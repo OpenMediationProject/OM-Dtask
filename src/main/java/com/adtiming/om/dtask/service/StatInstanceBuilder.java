@@ -78,7 +78,7 @@ public class StatInstanceBuilder extends PbBuiler {
 
     void buildInstanceCountryEcpm(String name, int hourCount) {
         build(name, cfg.dir, out -> {
-            LocalDateTime now = LocalDateTime.now(cfg.TZ);
+            LocalDateTime now = LocalDateTime.now();
             adNetworkDelay.forEach((adnId, delay) -> {
                 LocalDateTime end = now.plusHours(-delay);
                 String endDay = end.format(ISO_DATE);
@@ -108,7 +108,7 @@ public class StatInstanceBuilder extends PbBuiler {
     //adn country 24小时数据
     void buildAdNetworkCountryEcpm() {
         build("stat_adn_country_ecpm24h", cfg.dir, out -> {
-            LocalDateTime now = LocalDateTime.now(cfg.TZ);
+            LocalDateTime now = LocalDateTime.now();
             adNetworkDelay.forEach((adnId, delay) -> {
                 LocalDateTime end = now.plusHours(-delay);
                 String endDay = end.format(ISO_DATE);
@@ -136,7 +136,7 @@ public class StatInstanceBuilder extends PbBuiler {
 
     void buildAdNetworkAdTypeCountryEcpm3d() {
         build("stat_adn_adtype_country_ecpm3d", cfg.dir, out -> {
-            LocalDateTime now = LocalDateTime.now(cfg.TZ);
+            LocalDateTime now = LocalDateTime.now();
             adNetworkDelay.forEach((adnId, delay) -> {
                 LocalDateTime end = now.plusHours(-delay);
                 String endDay = end.format(ISO_DATE);
@@ -165,7 +165,7 @@ public class StatInstanceBuilder extends PbBuiler {
 
     void buildAdNetworkEcpm3d() {
         build("stat_adn_ecpm3d", cfg.dir, out -> {
-            LocalDateTime now = LocalDateTime.now(cfg.TZ);
+            LocalDateTime now = LocalDateTime.now();
             adNetworkDelay.forEach((adnId, delay) -> {
                 LocalDateTime end = now.plusHours(-delay);
                 String endDay = end.format(ISO_DATE);

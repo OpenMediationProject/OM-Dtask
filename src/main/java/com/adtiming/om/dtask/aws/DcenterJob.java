@@ -53,7 +53,7 @@ public class DcenterJob {
         if (awsConfig.isDisabled()) {
             return;
         }
-        LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC);
+        LocalDateTime executeDateTime = LocalDateTime.now();
         String year = executeDateTime.format(Constants.FORMATTER_YYYY);
         String month = executeDateTime.format(Constants.FORMATTER_MM);
         String day = executeDateTime.format(Constants.FORMATTER_DD);

@@ -1,5 +1,5 @@
 
-SELECT date_format(from_unixtime(ts / 1000, 'UTC'), '%Y-%m-%d') AS day,
+SELECT date_format(from_unixtime(ts / 1000, 'UTC+8'), '%Y-%m-%d') AS day,
        coalesce(publisher_id, 0)                                AS publisher_id,
        coalesce(pub_app_id, 0)                                  AS pub_app_id,
        coalesce(plat, -1)                                       AS platform,
@@ -16,7 +16,7 @@ WHERE
     AND m='[(${month})]'
     AND d='[(${day})]'
 GROUP BY
-    date_format(from_unixtime(ts / 1000, 'UTC'), '%Y-%m-%d'),
+    date_format(from_unixtime(ts / 1000, 'UTC+8'), '%Y-%m-%d'),
     coalesce(publisher_id, 0),
     coalesce(pub_app_id, 0),
     country,

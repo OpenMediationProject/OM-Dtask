@@ -102,7 +102,7 @@ public class ReportBuilderService {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    @Scheduled(cron = "0 */10 * * * ?", zone = "UTC")
+    @Scheduled(cron = "0 */10 * * * ?")
     public void scheduleReport() {
         MailSender mailSender = getMailSender();
         if (mailSender == null) {

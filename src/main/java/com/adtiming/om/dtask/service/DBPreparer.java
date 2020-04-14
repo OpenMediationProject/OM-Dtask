@@ -26,7 +26,7 @@ public class DBPreparer {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    @Scheduled(cron = "0 0 1 * * ?", zone = "UTC")
+    @Scheduled(cron = "0 0 1 * * ?")
     private void createDayPartitions() {
         createDayPartitions("stat_adnetwork");
         createDayPartitions("stat_lr");
@@ -36,7 +36,7 @@ public class DBPreparer {
     private void createDayPartitions(String table) {
         StringBuilder buf = new StringBuilder(100);
         buf.append("alter table ").append(table).append(" add partition(");
-        LocalDate day = LocalDate.now(ZoneOffset.UTC).plusDays(1);
+        LocalDate day = LocalDate.now().plusDays(1);
         String dayStr = FMT_DAY.format(day);
         String endDayStr = FMT_DAY.format(day.plusDays(1));
         buf.append(" partition p").append(dayStr).append(" values less than (to_days(").append(endDayStr).append("))");
@@ -50,7 +50,7 @@ public class DBPreparer {
         }
     }
 
-    @Scheduled(cron = "0 0 1 1 * ?", zone = "UTC")
+    @Scheduled(cron = "0 0 1 1 * ?")
     private void createMonthPartitions() {
         createMonthPartitions("report_adnetwork_task");
         createMonthPartitions("report_adtiming");
@@ -70,7 +70,7 @@ public class DBPreparer {
     private void createMonthPartitions(String table) {
         StringBuilder buf = new StringBuilder(100);
         buf.append("alter table ").append(table).append(" add partition(");
-        LocalDate day = LocalDate.now(ZoneOffset.UTC).plusMonths(1).withDayOfMonth(1);
+        LocalDate day = LocalDate.now().plusMonths(1).withDayOfMonth(1);
         String monthStr = FMT_MONTH.format(day);
         String endDayStr = FMT_DAY.format(day.plusMonths(1));
         buf.append(" partition p").append(monthStr).append(" values less than (to_days(").append(endDayStr).append("))");

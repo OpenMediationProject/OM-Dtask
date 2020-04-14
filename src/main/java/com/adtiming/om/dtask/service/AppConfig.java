@@ -21,7 +21,7 @@ public class AppConfig {
 
     private static final Logger log = LogManager.getLogger();
 
-    public final ZoneOffset TZ = ZoneOffset.UTC;
+//    public final ZoneOffset TZ = ZoneOffset.UTC;
     public final DateTimeFormatter LOG_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     public enum AppEnv {

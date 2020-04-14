@@ -78,7 +78,7 @@ public class CurrencyService {
         return 0F;
     }
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 5 8 * * *")
     public void runCurrencyExchange() {
         if (!cfg.isProd())
             return;
@@ -91,7 +91,7 @@ public class CurrencyService {
                 return;
             List<Object[]> insertParam = new ArrayList<>(list.size());
             List<Object[]> insertUpdateParam = new ArrayList<>(list.size());
-            String day = LocalDateTime.now(cfg.TZ).format(cfg.LOG_DATE_FORMAT);
+            String day = LocalDateTime.now().format(cfg.LOG_DATE_FORMAT);
             for (String from : list) {
                 try {
                     float c = getCurrency(from, "USD");

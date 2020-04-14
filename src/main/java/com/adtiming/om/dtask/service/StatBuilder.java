@@ -123,7 +123,7 @@ public class StatBuilder extends PbBuiler {
      */
     void buildPlacementEcpm() {
         build("stat_placement_ecpm", cfg.dir, out -> {
-            LocalDate nowDate = LocalDate.now(cfg.TZ);
+            LocalDate nowDate = LocalDate.now();
             LocalDate startDate = nowDate.plusDays(-7);
 
             String sql = "select placement_id,country,sum(api_impr) impr_sum,sum(revenue) revenue_sum" +
@@ -150,7 +150,7 @@ public class StatBuilder extends PbBuiler {
      */
     void buildCountryAdTypeEcpm() {
         build("stat_country_adtype_ecpm", cfg.dir, out -> {
-            LocalDate nowDate = LocalDate.now(cfg.TZ);
+            LocalDate nowDate = LocalDate.now();
             LocalDate startDate = nowDate.plusDays(-7);
 
             String sql = "select a.country,a.ad_type,sum(api_impr) impr_sum,sum(revenue) revenue_sum" +

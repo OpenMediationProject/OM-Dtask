@@ -1,5 +1,5 @@
-SELECT date_format(from_unixtime(ts / 1000,'UTC'), '%Y-%m-%d')  AS day,
-       date_format(from_unixtime(ts / 1000, 'UTC'), '%H') AS hour,
+SELECT date_format(from_unixtime(ts / 1000,'UTC+8'), '%Y-%m-%d')  AS day,
+       date_format(from_unixtime(ts / 1000, 'UTC+8'), '%H') AS hour,
        country,
        coalesce(plat, -1)                                 AS platform,
        coalesce(publisher_id, 0)                          AS publisher_id,
@@ -27,8 +27,8 @@ WHERE
     AND d='[(${day})]'
     AND h='[(${hour})]'
 GROUP BY
-    date_format(from_unixtime(ts / 1000, 'UTC'), '%Y-%m-%d'),
-    date_format(from_unixtime(ts / 1000, 'UTC'), '%H'),
+    date_format(from_unixtime(ts / 1000, 'UTC+8'), '%Y-%m-%d'),
+    date_format(from_unixtime(ts / 1000, 'UTC+8'), '%H'),
     country,
     coalesce(plat, -1),
     coalesce(publisher_id, 0),
