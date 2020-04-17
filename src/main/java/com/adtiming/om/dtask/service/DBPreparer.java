@@ -20,24 +20,25 @@ public class DBPreparer {
 
     private static final Logger log = LogManager.getLogger();
 
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter FMT_DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter FMT_MONTH = DateTimeFormatter.ofPattern("yyyyMM");
 
     @Resource
     private JdbcTemplate jdbcTemplate;
 
     @Scheduled(cron = "0 0 1 * * ?", zone = "UTC")
-    private void createPartitions() {
-        create("stat_adnetwork");
-        create("stat_lr");
-        create("stat_dau");
+    private void createDayPartitions() {
+        createDayPartitions("stat_adnetwork");
+        createDayPartitions("stat_lr");
+        createDayPartitions("stat_dau");
     }
 
-    private void create(String table) {
+    private void createDayPartitions(String table) {
         StringBuilder buf = new StringBuilder(100);
         buf.append("alter table ").append(table).append(" add partition(");
         LocalDate day = LocalDate.now(ZoneOffset.UTC).plusDays(1);
-        String dayStr = FMT.format(day);
-        String endDayStr = FMT.format(day.plusDays(1));
+        String dayStr = FMT_DAY.format(day);
+        String endDayStr = FMT_DAY.format(day.plusDays(1));
         buf.append(" partition p").append(dayStr).append(" values less than (to_days(").append(endDayStr).append("))");
         buf.append(" )");
 
@@ -46,6 +47,40 @@ public class DBPreparer {
             jdbcTemplate.update(sql);
         } catch (DataAccessException e) {
             log.error("create partition error, sql: {}", sql, e);
+        }
+    }
+
+    @Scheduled(cron = "0 0 1 1 * ?", zone = "UTC")
+    private void createMonthPartitions() {
+        createMonthPartitions("report_adnetwork_task");
+        createMonthPartitions("report_adtiming");
+        createMonthPartitions("report_admob");
+        createMonthPartitions("report_facebook");
+        createMonthPartitions("report_unity");
+        createMonthPartitions("report_vungle");
+        createMonthPartitions("report_adcolony");
+        createMonthPartitions("report_applovin");
+        createMonthPartitions("report_mopub");
+        createMonthPartitions("report_tapjoy");
+        createMonthPartitions("report_chartboost");
+        createMonthPartitions("report_tiktok");
+        createMonthPartitions("report_mintegral");
+    }
+
+    private void createMonthPartitions(String table) {
+        StringBuilder buf = new StringBuilder(100);
+        buf.append("alter table ").append(table).append(" add partition(");
+        LocalDate day = LocalDate.now(ZoneOffset.UTC).plusMonths(1).withDayOfMonth(1);
+        String monthStr = FMT_MONTH.format(day);
+        String endDayStr = FMT_DAY.format(day.plusMonths(1));
+        buf.append(" partition p").append(monthStr).append(" values less than (to_days(").append(endDayStr).append("))");
+        buf.append(" )");
+
+        String sql = buf.toString();
+        try {
+            jdbcTemplate.update(sql);
+        } catch (DataAccessException e) {
+            log.error("create month partition error, sql: {}", sql, e);
         }
     }
 
