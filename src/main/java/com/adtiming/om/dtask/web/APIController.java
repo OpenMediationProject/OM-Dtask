@@ -5,19 +5,26 @@ package com.adtiming.om.dtask.web;
 
 import com.adtiming.om.dtask.aws.DcenterJob;
 import com.adtiming.om.dtask.util.Constants;
+import com.adtiming.om.dtask.util.Util;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 public class APIController {
@@ -30,15 +37,22 @@ public class APIController {
     @Resource
     private DcenterJob dcenterJob;
 
+    /**
+     * used for om-server init
+     *
+     * @return snode config
+     */
     @GetMapping("/snode/config/get")
     public ResponseEntity<?> getSnodeConfig(
-            @RequestParam("id") String id,
+            HttpServletRequest req,
+            @RequestParam("nodeid") String nodeid,
             @RequestParam("dcenter") int dcenter) {
-        log.debug("snode/config/get, id: {}, dcenter: {}", id, dcenter);
+        log.debug("snode/config/get, nodeid: {}, dcenter: {}", nodeid, dcenter);
         String sql = "select id,name,kafka_status,kafka_servers," +
                 "s3_status,s3_region,s3_bucket,s3_access_key_id,s3_secret_access_key" +
                 " from om_server_dcenter where id=?";
         JSONObject o = new JSONObject(jdbcTemplate.queryForMap(sql, dcenter));
+        o.put("dcenter", dcenter);
         if (o.getIntValue("kafka_status") == 0) {
             o.remove("kafka_servers");
         }
@@ -48,6 +62,24 @@ public class APIController {
             o.remove("s3_access_key_id");
             o.remove("s3_secret_access_key");
         }
+
+        sql = "select id from om_server_node where nodeid=?";
+        List<Integer> existsId = jdbcTemplate.queryForList(sql, Integer.class, nodeid);
+        if (existsId.isEmpty()) {
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+            jdbcTemplate.update(conn -> {
+                String insertSql = "insert into om_server_node (nodeid, dcenter, ip) values (?,?,?)";
+                PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, nodeid);
+                ps.setInt(2, dcenter);
+                ps.setString(3, Util.getClientIP(req));
+                return ps;
+            }, keyHolder);
+            o.put("id", keyHolder.getKey().intValue());
+        } else {
+            o.put("id", existsId.get(0));
+        }
+
         return ResponseEntity.ok(o);
     }
 
@@ -78,7 +110,7 @@ public class APIController {
                     log.error("backfill common report error", e);
                 }
             }
-        }).start();
+        }, "backfillCommonReport").start();
         return ResponseEntity.ok("success");
     }
 
@@ -108,7 +140,7 @@ public class APIController {
                     log.error("backfill user report error", e);
                 }
             }
-        }).start();
+        }, "backfillUserReport").start();
         return ResponseEntity.ok("success");
     }
 
