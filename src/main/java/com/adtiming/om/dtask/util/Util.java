@@ -5,6 +5,7 @@ package com.adtiming.om.dtask.util;
 
 import org.springframework.util.StringUtils;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Locale;
 
 public class Util {
@@ -44,6 +45,14 @@ public class Util {
      */
     public static String lowerCaseName(String name) {
         return name.toLowerCase(Locale.US);
+    }
+
+    public static String getClientIP(HttpServletRequest req) {
+        String clientIP = req.getHeader("X-Real-IP");
+        if (clientIP == null) {
+            clientIP = req.getRemoteAddr();
+        }
+        return clientIP;
     }
 
 }
