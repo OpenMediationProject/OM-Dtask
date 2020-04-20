@@ -44,7 +44,7 @@ public class CurrencyService {
     @Resource
     private HttpClient httpClient;
 
-    public static final String APPKEY = "c017186d90da40ce7078a28f36e5e027";// 你的appkey
+    public static final String APPKEY = "97f2011368aada34cb01d9264748350b";// 你的appkey
     public static final String URL = "http://op.juhe.cn/onebox/exchange/currency";
     public static final String to = "USD";
 
