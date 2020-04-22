@@ -36,6 +36,10 @@ function updateConfig() {
 
     # If config exists in file, replace it. Otherwise, append to file.
     if grep -E -q "^$key=" "$file"; then
+        if [[ ${key} = "username" ]];then
+            sed -i "/mysql/,+4s/username:.*/username: ${!env_var}/g" "$file"
+            return $?
+        fi
         sed -r -i "s@^(.*$key=).*@\1$value@g" "$file" #note that no config values may contain an '@' char
     fi
 }
