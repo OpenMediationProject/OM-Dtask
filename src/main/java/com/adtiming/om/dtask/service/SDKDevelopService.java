@@ -32,7 +32,7 @@ public class SDKDevelopService {
         if (!cfg.isProd())
             return;
         try {
-            String sql = "select id from om_dev_app where status=1 and date_sub(now(), interval -1 hour) > active_time";
+            String sql = "select id from om_dev_app where status=1 and date_sub(active_time, interval -1 hour)<now()";
             List<Long> ids = jdbcTemplate.queryForList(sql, Long.class);
             if (!ids.isEmpty()) {
                 String update = String.format("update om_dev_app set status=0 where id in (%s)", StringUtils.join(ids, ','));
