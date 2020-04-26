@@ -34,6 +34,8 @@ public class SDKCacheBuilder extends PbBuiler {
 
     private final File dir = new File("cache");
 
+    private final String MODEL_SPLIT_STR = "\n";
+
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
         if (!dir.exists() && dir.mkdir())
@@ -80,7 +82,7 @@ public class SDKCacheBuilder extends PbBuiler {
                 }
                 String brandModelBlacklist = rs.getString("brand_model_blacklist");
                 if (StringUtils.isNoneBlank(brandModelBlacklist)) {
-                    rule.addAllBrandModelBlacklist(Arrays.stream(brandModelBlacklist.split("[,\n]"))
+                    rule.addAllBrandModelBlacklist(Arrays.stream(brandModelBlacklist.split(MODEL_SPLIT_STR))
                             .filter(StringUtils::isNotBlank)
                             .map(o -> o.trim().toLowerCase())
                             .collect(Collectors.toList()));
@@ -213,10 +215,10 @@ public class SDKCacheBuilder extends PbBuiler {
                         .addAllOsvWhitelist(str2list(rs.getString("osv_whitelist")))
                         .addAllMakeBlacklist(str2list(rs.getString("make_blacklist")))
                         .addAllMakeWhitelist(str2list(rs.getString("make_whitelist")))
-                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist")))
-                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist")))
-                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist")))
-                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist")))
+                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist"), MODEL_SPLIT_STR))
+                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist"), MODEL_SPLIT_STR))
+                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist"), MODEL_SPLIT_STR))
+                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist"), MODEL_SPLIT_STR))
                         .addAllDidBlacklist(str2list(rs.getString("did_blacklist")))
                         .addAllSdkvBlacklist(str2list(rs.getString("sdkv_blacklist")));
 
@@ -235,7 +237,7 @@ public class SDKCacheBuilder extends PbBuiler {
 
     void buildAdNetowrk() {
         build("om_adnetwork", cfg.dir, out -> {
-            String sql = "SELECT id,name,class_name,type,sdk_version FROM om_adnetwork WHERE status=1";
+            String sql = "SELECT id,name,class_name,type,sdk_version,bid_endpoint FROM om_adnetwork WHERE status=1";
             jdbcTemplate.query(sql, rs -> {
                 AdNetworkPB.AdNetwork adn = AdNetworkPB.AdNetwork.newBuilder()
                         .setId(rs.getInt("id"))
@@ -243,6 +245,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setClassName(StringUtils.defaultIfEmpty(rs.getString("class_name"), ""))
                         .setType(rs.getInt("type"))
                         .setSdkVersion(StringUtils.defaultIfEmpty(rs.getString("sdk_version"), ""))
+                        .setBidEndpoint(StringUtils.defaultIfEmpty(rs.getString("bid_endpoint"), ""))
                         .build();
                 out.writeDelimited(adn);
             });
@@ -264,7 +267,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setOsvMax(rs.getString("osv_max"))
                         .setOsvMin(rs.getString("osv_min"))
                         .addAllMakeDeviceBlacklist(str2list(rs.getString("make_device_blacklist"), String::toLowerCase))
-                        .addAllBrandModelBlacklist(str2list(rs.getString("brand_model_blacklist"), String::toLowerCase));
+                        .addAllBrandModelBlacklist(str2list(rs.getString("brand_model_blacklist"), String::toLowerCase, MODEL_SPLIT_STR));
                 String key = rs.getInt("pub_app_id") + "_" + rs.getInt("adn_id");
                 blockRule.computeIfAbsent(key, k -> new ArrayList<>()).add(rule.build());
             });
@@ -320,10 +323,10 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setOsvMin(StringUtils.defaultIfBlank(rs.getString("osv_min"), ""))
                         .addAllMakeBlacklist(str2list(rs.getString("make_blacklist")))
                         .addAllMakeWhitelist(str2list(rs.getString("make_whitelist")))
-                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist")))
-                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist")))
-                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist")))
-                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist")))
+                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist"), MODEL_SPLIT_STR))
+                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist"), MODEL_SPLIT_STR))
+                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist"), MODEL_SPLIT_STR))
+                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist"), MODEL_SPLIT_STR))
                         .setFrequencyCap(rs.getInt("frequency_cap"))
                         .setFrequencyUnit(rs.getInt("frequency_unit"))
                         .setFrequencyInterval(rs.getInt("frequency_interval"))
@@ -469,22 +472,22 @@ public class SDKCacheBuilder extends PbBuiler {
                         List<String> brandWhitelist = Collections.emptyList();
                         String brandWhitelistStr = rs.getString("brand_whitelist");
                         if (StringUtils.isNoneBlank(brandWhitelistStr)) {
-                            brandWhitelist = Arrays.stream(brandWhitelistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
+                            brandWhitelist = Arrays.stream(brandWhitelistStr.split(MODEL_SPLIT_STR)).filter(StringUtils::isNotBlank).collect(Collectors.toList());
                         }
                         List<String> brandBlacklist = Collections.emptyList();
                         String brandBlacklistStr = rs.getString("brand_blacklist");
                         if (StringUtils.isNoneBlank(brandBlacklistStr)) {
-                            brandBlacklist = Arrays.stream(brandBlacklistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
+                            brandBlacklist = Arrays.stream(brandBlacklistStr.split(MODEL_SPLIT_STR)).filter(StringUtils::isNotBlank).collect(Collectors.toList());
                         }
                         List<String> modelWhitelist = Collections.emptyList();
                         String modelWhitelistStr = rs.getString("model_whitelist");
                         if (StringUtils.isNoneBlank(modelWhitelistStr)) {
-                            modelWhitelist = Arrays.stream(modelWhitelistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
+                            modelWhitelist = Arrays.stream(modelWhitelistStr.split(MODEL_SPLIT_STR)).filter(StringUtils::isNotBlank).collect(Collectors.toList());
                         }
                         List<String> modelBlacklist = Collections.emptyList();
                         String modelBlacklistStr = rs.getString("model_blacklist");
                         if (StringUtils.isNoneBlank(modelBlacklistStr)) {
-                            modelBlacklist = Arrays.stream(modelBlacklistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
+                            modelBlacklist = Arrays.stream(modelBlacklistStr.split(MODEL_SPLIT_STR)).filter(StringUtils::isNotBlank).collect(Collectors.toList());
                         }
                         out.writeDelimited(AdNetworkPB.Segment.newBuilder()
                                 .setId(rs.getInt("id"))

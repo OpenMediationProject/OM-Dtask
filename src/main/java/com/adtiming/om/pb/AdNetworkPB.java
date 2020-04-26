@@ -79,6 +79,24 @@ public final class AdNetworkPB {
      */
     com.google.protobuf.ByteString
         getSdkVersionBytes();
+
+    /**
+     * <pre>
+     * S2S BidEndpointURL
+     * </pre>
+     *
+     * <code>optional string bid_endpoint = 6;</code>
+     */
+    java.lang.String getBidEndpoint();
+    /**
+     * <pre>
+     * S2S BidEndpointURL
+     * </pre>
+     *
+     * <code>optional string bid_endpoint = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getBidEndpointBytes();
   }
   /**
    * Protobuf type {@code AdNetwork}
@@ -97,6 +115,7 @@ public final class AdNetworkPB {
       className_ = "";
       type_ = 0;
       sdkVersion_ = "";
+      bidEndpoint_ = "";
     }
 
     @java.lang.Override
@@ -150,6 +169,12 @@ public final class AdNetworkPB {
               java.lang.String s = input.readStringRequireUtf8();
 
               sdkVersion_ = s;
+              break;
+            }
+            case 50: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              bidEndpoint_ = s;
               break;
             }
           }
@@ -317,6 +342,48 @@ public final class AdNetworkPB {
       }
     }
 
+    public static final int BID_ENDPOINT_FIELD_NUMBER = 6;
+    private volatile java.lang.Object bidEndpoint_;
+    /**
+     * <pre>
+     * S2S BidEndpointURL
+     * </pre>
+     *
+     * <code>optional string bid_endpoint = 6;</code>
+     */
+    public java.lang.String getBidEndpoint() {
+      java.lang.Object ref = bidEndpoint_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        bidEndpoint_ = s;
+        return s;
+      }
+    }
+    /**
+     * <pre>
+     * S2S BidEndpointURL
+     * </pre>
+     *
+     * <code>optional string bid_endpoint = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getBidEndpointBytes() {
+      java.lang.Object ref = bidEndpoint_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        bidEndpoint_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -344,6 +411,9 @@ public final class AdNetworkPB {
       if (!getSdkVersionBytes().isEmpty()) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 5, sdkVersion_);
       }
+      if (!getBidEndpointBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 6, bidEndpoint_);
+      }
     }
 
     public int getSerializedSize() {
@@ -367,6 +437,9 @@ public final class AdNetworkPB {
       }
       if (!getSdkVersionBytes().isEmpty()) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(5, sdkVersion_);
+      }
+      if (!getBidEndpointBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(6, bidEndpoint_);
       }
       memoizedSize = size;
       return size;
@@ -394,6 +467,8 @@ public final class AdNetworkPB {
           == other.getType());
       result = result && getSdkVersion()
           .equals(other.getSdkVersion());
+      result = result && getBidEndpoint()
+          .equals(other.getBidEndpoint());
       return result;
     }
 
@@ -414,6 +489,8 @@ public final class AdNetworkPB {
       hash = (53 * hash) + getType();
       hash = (37 * hash) + SDK_VERSION_FIELD_NUMBER;
       hash = (53 * hash) + getSdkVersion().hashCode();
+      hash = (37 * hash) + BID_ENDPOINT_FIELD_NUMBER;
+      hash = (53 * hash) + getBidEndpoint().hashCode();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -542,6 +619,8 @@ public final class AdNetworkPB {
 
         sdkVersion_ = "";
 
+        bidEndpoint_ = "";
+
         return this;
       }
 
@@ -569,6 +648,7 @@ public final class AdNetworkPB {
         result.className_ = className_;
         result.type_ = type_;
         result.sdkVersion_ = sdkVersion_;
+        result.bidEndpoint_ = bidEndpoint_;
         onBuilt();
         return result;
       }
@@ -626,6 +706,10 @@ public final class AdNetworkPB {
         }
         if (!other.getSdkVersion().isEmpty()) {
           sdkVersion_ = other.sdkVersion_;
+          onChanged();
+        }
+        if (!other.getBidEndpoint().isEmpty()) {
+          bidEndpoint_ = other.bidEndpoint_;
           onChanged();
         }
         onChanged();
@@ -968,6 +1052,95 @@ public final class AdNetworkPB {
   checkByteStringIsUtf8(value);
         
         sdkVersion_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object bidEndpoint_ = "";
+      /**
+       * <pre>
+       * S2S BidEndpointURL
+       * </pre>
+       *
+       * <code>optional string bid_endpoint = 6;</code>
+       */
+      public java.lang.String getBidEndpoint() {
+        java.lang.Object ref = bidEndpoint_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          bidEndpoint_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <pre>
+       * S2S BidEndpointURL
+       * </pre>
+       *
+       * <code>optional string bid_endpoint = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getBidEndpointBytes() {
+        java.lang.Object ref = bidEndpoint_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          bidEndpoint_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <pre>
+       * S2S BidEndpointURL
+       * </pre>
+       *
+       * <code>optional string bid_endpoint = 6;</code>
+       */
+      public Builder setBidEndpoint(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        bidEndpoint_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * S2S BidEndpointURL
+       * </pre>
+       *
+       * <code>optional string bid_endpoint = 6;</code>
+       */
+      public Builder clearBidEndpoint() {
+        
+        bidEndpoint_ = getDefaultInstance().getBidEndpoint();
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * S2S BidEndpointURL
+       * </pre>
+       *
+       * <code>optional string bid_endpoint = 6;</code>
+       */
+      public Builder setBidEndpointBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        bidEndpoint_ = value;
         onChanged();
         return this;
       }
@@ -10671,50 +10844,50 @@ public final class AdNetworkPB {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\tadn.proto\032\014common.proto\"\\\n\tAdNetwork\022\n" +
+      "\n\tadn.proto\032\014common.proto\"r\n\tAdNetwork\022\n" +
       "\n\002id\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022\022\n\nclass_name\030\003" +
-      " \001(\t\022\014\n\004type\030\004 \001(\005\022\023\n\013sdk_version\030\005 \001(\t\"" +
-      "|\n\014AdNetworkApp\022\n\n\002id\030\001 \001(\005\022\016\n\006adn_id\030\002 " +
-      "\001(\005\022\022\n\npub_app_id\030\003 \001(\005\022\017\n\007app_key\030\004 \001(\t" +
-      "\022+\n\013block_rules\030\006 \003(\0132\026.AdNetworkAppBloc" +
-      "kRule\"\321\001\n\025AdNetworkAppBlockRule\022\n\n\002id\030\001 " +
-      "\001(\005\022\022\n\npub_app_id\030\002 \001(\005\022\016\n\006adn_id\030\003 \001(\005\022" +
-      "\023\n\013sdk_version\030\004 \001(\t\022\017\n\007osv_max\030\005 \001(\t\022\017\n" +
-      "\007osv_min\030\006 \001(\t\022\035\n\025make_device_blacklist\030",
-      "\007 \003(\t\022\035\n\025brand_model_blacklist\030\010 \003(\t\022\023\n\013" +
-      "app_version\030\t \001(\t\"\244\005\n\010Instance\022\n\n\002id\030\001 \001" +
-      "(\005\022\022\n\npub_app_id\030\002 \001(\005\022\024\n\014placement_id\030\003" +
-      " \001(\005\022\016\n\006adn_id\030\004 \001(\005\022\025\n\rplacement_key\030\005 " +
-      "\001(\t\022\023\n\013app_unit_id\030\006 \001(\t\022\017\n\007osv_max\030\007 \001(" +
-      "\t\022\017\n\007osv_min\030\010 \001(\t\022\026\n\016make_whitelist\030\t \003" +
-      "(\t\022\026\n\016make_blacklist\030\n \003(\t\022\027\n\017brand_whit" +
-      "elist\030\013 \003(\t\022\027\n\017brand_blacklist\030\014 \003(\t\022\027\n\017" +
-      "model_whitelist\030\r \003(\t\022\027\n\017model_blacklist" +
-      "\030\016 \003(\t\022\025\n\rfrequency_cap\030\017 \001(\005\022\026\n\016frequen",
-      "cy_unit\030\020 \001(\005\022\032\n\022frequency_interval\030\021 \001(" +
-      "\005\022\021\n\thb_status\030\022 \001(\010\022\014\n\004ecpm\030\023 \001(\002\0228\n\020co" +
-      "untry_settings\030\024 \003(\0132\036.Instance.CountryS" +
-      "ettingsEntry\032Q\n\024CountrySettingsEntry\022\013\n\003" +
-      "key\030\001 \001(\t\022(\n\005value\030\002 \001(\0132\031.Instance.Coun" +
-      "trySettings:\0028\001\032w\n\017CountrySettings\0225\n\006pe" +
-      "riod\030\001 \003(\0132%.Instance.CountrySettings.Pe" +
-      "riodEntry\032-\n\013PeriodEntry\022\013\n\003key\030\001 \001(\005\022\r\n" +
-      "\005value\030\002 \001(\005:\0028\001\"\302\002\n\014InstanceRule\022\n\n\002id\030" +
-      "\001 \001(\005\022\024\n\014publisher_id\030\002 \001(\005\022\022\n\npub_app_i",
-      "d\030\003 \001(\005\022\024\n\014placement_id\030\004 \001(\005\022\017\n\007country" +
-      "\030\005 \001(\t\022\021\n\tsort_type\030\006 \001(\005\022\024\n\003abt\030\007 \001(\0162\007" +
-      ".ABTest\022\022\n\nsegment_id\030\010 \001(\005\022\023\n\013auto_swit" +
-      "ch\030\t \001(\005\022:\n\017instance_weight\030\n \003(\0132!.Inst" +
-      "anceRule.InstanceWeightEntry\022\020\n\010priority" +
-      "\030\013 \001(\005\0325\n\023InstanceWeightEntry\022\013\n\003key\030\001 \001" +
-      "(\005\022\r\n\005value\030\002 \001(\005:\0028\001\"\347\001\n\007Segment\022\n\n\002id\030" +
-      "\001 \001(\005\022\024\n\014placement_id\030\002 \001(\005\022\017\n\007country\030\003" +
-      " \001(\t\022\021\n\tfrequency\030\004 \001(\005\022\020\n\010con_type\030\005 \001(" +
-      "\005\022\027\n\017brand_whitelist\030\006 \003(\t\022\027\n\017brand_blac",
-      "klist\030\007 \003(\t\022\027\n\017model_whitelist\030\010 \003(\t\022\027\n\017" +
-      "model_blacklist\030\t \003(\t\022\017\n\007iap_min\030\n \001(\002\022\017" +
-      "\n\007iap_max\030\013 \001(\002B!\n\022com.adtiming.om.pbB\013A" +
-      "dNetworkPBb\006proto3"
+      " \001(\t\022\014\n\004type\030\004 \001(\005\022\023\n\013sdk_version\030\005 \001(\t\022" +
+      "\024\n\014bid_endpoint\030\006 \001(\t\"|\n\014AdNetworkApp\022\n\n" +
+      "\002id\030\001 \001(\005\022\016\n\006adn_id\030\002 \001(\005\022\022\n\npub_app_id\030" +
+      "\003 \001(\005\022\017\n\007app_key\030\004 \001(\t\022+\n\013block_rules\030\006 " +
+      "\003(\0132\026.AdNetworkAppBlockRule\"\321\001\n\025AdNetwor" +
+      "kAppBlockRule\022\n\n\002id\030\001 \001(\005\022\022\n\npub_app_id\030" +
+      "\002 \001(\005\022\016\n\006adn_id\030\003 \001(\005\022\023\n\013sdk_version\030\004 \001" +
+      "(\t\022\017\n\007osv_max\030\005 \001(\t\022\017\n\007osv_min\030\006 \001(\t\022\035\n\025",
+      "make_device_blacklist\030\007 \003(\t\022\035\n\025brand_mod" +
+      "el_blacklist\030\010 \003(\t\022\023\n\013app_version\030\t \001(\t\"" +
+      "\244\005\n\010Instance\022\n\n\002id\030\001 \001(\005\022\022\n\npub_app_id\030\002" +
+      " \001(\005\022\024\n\014placement_id\030\003 \001(\005\022\016\n\006adn_id\030\004 \001" +
+      "(\005\022\025\n\rplacement_key\030\005 \001(\t\022\023\n\013app_unit_id" +
+      "\030\006 \001(\t\022\017\n\007osv_max\030\007 \001(\t\022\017\n\007osv_min\030\010 \001(\t" +
+      "\022\026\n\016make_whitelist\030\t \003(\t\022\026\n\016make_blackli" +
+      "st\030\n \003(\t\022\027\n\017brand_whitelist\030\013 \003(\t\022\027\n\017bra" +
+      "nd_blacklist\030\014 \003(\t\022\027\n\017model_whitelist\030\r " +
+      "\003(\t\022\027\n\017model_blacklist\030\016 \003(\t\022\025\n\rfrequenc",
+      "y_cap\030\017 \001(\005\022\026\n\016frequency_unit\030\020 \001(\005\022\032\n\022f" +
+      "requency_interval\030\021 \001(\005\022\021\n\thb_status\030\022 \001" +
+      "(\010\022\014\n\004ecpm\030\023 \001(\002\0228\n\020country_settings\030\024 \003" +
+      "(\0132\036.Instance.CountrySettingsEntry\032Q\n\024Co" +
+      "untrySettingsEntry\022\013\n\003key\030\001 \001(\t\022(\n\005value" +
+      "\030\002 \001(\0132\031.Instance.CountrySettings:\0028\001\032w\n" +
+      "\017CountrySettings\0225\n\006period\030\001 \003(\0132%.Insta" +
+      "nce.CountrySettings.PeriodEntry\032-\n\013Perio" +
+      "dEntry\022\013\n\003key\030\001 \001(\005\022\r\n\005value\030\002 \001(\005:\0028\001\"\302" +
+      "\002\n\014InstanceRule\022\n\n\002id\030\001 \001(\005\022\024\n\014publisher",
+      "_id\030\002 \001(\005\022\022\n\npub_app_id\030\003 \001(\005\022\024\n\014placeme" +
+      "nt_id\030\004 \001(\005\022\017\n\007country\030\005 \001(\t\022\021\n\tsort_typ" +
+      "e\030\006 \001(\005\022\024\n\003abt\030\007 \001(\0162\007.ABTest\022\022\n\nsegment" +
+      "_id\030\010 \001(\005\022\023\n\013auto_switch\030\t \001(\005\022:\n\017instan" +
+      "ce_weight\030\n \003(\0132!.InstanceRule.InstanceW" +
+      "eightEntry\022\020\n\010priority\030\013 \001(\005\0325\n\023Instance" +
+      "WeightEntry\022\013\n\003key\030\001 \001(\005\022\r\n\005value\030\002 \001(\005:" +
+      "\0028\001\"\347\001\n\007Segment\022\n\n\002id\030\001 \001(\005\022\024\n\014placement" +
+      "_id\030\002 \001(\005\022\017\n\007country\030\003 \001(\t\022\021\n\tfrequency\030" +
+      "\004 \001(\005\022\020\n\010con_type\030\005 \001(\005\022\027\n\017brand_whiteli",
+      "st\030\006 \003(\t\022\027\n\017brand_blacklist\030\007 \003(\t\022\027\n\017mod" +
+      "el_whitelist\030\010 \003(\t\022\027\n\017model_blacklist\030\t " +
+      "\003(\t\022\017\n\007iap_min\030\n \001(\002\022\017\n\007iap_max\030\013 \001(\002B!\n" +
+      "\022com.adtiming.om.pbB\013AdNetworkPBb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -10734,7 +10907,7 @@ public final class AdNetworkPB {
     internal_static_AdNetwork_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_AdNetwork_descriptor,
-        new java.lang.String[] { "Id", "Name", "ClassName", "Type", "SdkVersion", });
+        new java.lang.String[] { "Id", "Name", "ClassName", "Type", "SdkVersion", "BidEndpoint", });
     internal_static_AdNetworkApp_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_AdNetworkApp_fieldAccessorTable = new
