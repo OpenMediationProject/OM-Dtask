@@ -10,6 +10,7 @@ message AdNetwork {
     string class_name = 3; // SDK className prefix, used by /conf?v7
     int32 type = 4; // 二进制,0:Banner,1:Native,2:Video,3:Interstitial;
     string sdk_version = 5;
+    string bid_endpoint = 6; // S2S BidEndpointURL
 }
 
 message AdNetworkApp {
