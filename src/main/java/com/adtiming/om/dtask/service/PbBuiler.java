@@ -41,13 +41,7 @@ public abstract class PbBuiler {
     }
 
     public List<String> str2list(String str, Function<String, String> mapper) {
-        if (StringUtils.isEmpty(str))
-            return Collections.emptyList();
-        return Stream.of(str.split("[,\r\n]"))
-                .map(String::trim)
-                .filter(StringUtils::isNotBlank)
-                .map(mapper)
-                .collect(Collectors.toList());
+        return str2list(str, mapper, "[,\r\n]");
     }
 
     public List<String> str2list(String str, Function<String, String> mapper, String splitStr) {
