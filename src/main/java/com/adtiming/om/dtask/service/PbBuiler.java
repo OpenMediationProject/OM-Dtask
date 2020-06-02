@@ -33,13 +33,21 @@ public abstract class PbBuiler {
     }
 
     public List<String> str2list(String str) {
-        return str2list(str, String::toString);
+        return str2list(str, String::toString, "[,\r\n]");
+    }
+
+    public List<String> str2list(String str, String splitStr) {
+        return str2list(str, String::toString, splitStr);
     }
 
     public List<String> str2list(String str, Function<String, String> mapper) {
+        return str2list(str, mapper, "[,\r\n]");
+    }
+
+    public List<String> str2list(String str, Function<String, String> mapper, String splitStr) {
         if (StringUtils.isEmpty(str))
             return Collections.emptyList();
-        return Stream.of(str.split("[,\r\n]"))
+        return Stream.of(str.split(splitStr))
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
                 .map(mapper)

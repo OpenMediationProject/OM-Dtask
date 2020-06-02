@@ -19,6 +19,8 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -31,6 +33,10 @@ public class SDKCacheBuilder extends PbBuiler {
 
     @Resource
     private JdbcTemplate jdbcTemplate;
+
+    private final File dir = new File("cache");
+
+    private final String MODEL_SPLIT_STR = "#";
 
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
@@ -47,7 +53,6 @@ public class SDKCacheBuilder extends PbBuiler {
         buildAdNetowrkApp();
         buildInstance();
         buildInstanceRule();
-        buildSegment();
 
         buildSdkDevApp();
         buildSdkDevDevice();
@@ -78,7 +83,7 @@ public class SDKCacheBuilder extends PbBuiler {
                 }
                 String brandModelBlacklist = rs.getString("brand_model_blacklist");
                 if (StringUtils.isNoneBlank(brandModelBlacklist)) {
-                    rule.addAllBrandModelBlacklist(Arrays.stream(brandModelBlacklist.split("[,\n]"))
+                    rule.addAllBrandModelBlacklist(Arrays.stream(brandModelBlacklist.split(MODEL_SPLIT_STR))
                             .filter(StringUtils::isNotBlank)
                             .map(o -> o.trim().toLowerCase())
                             .collect(Collectors.toList()));
@@ -174,9 +179,15 @@ public class SDKCacheBuilder extends PbBuiler {
                         .put(rs.getString("country"), cs.build());
             });
 
+            final Map<Integer, Integer> defaultInventoryIntervalStep = new HashMap<>();
+            defaultInventoryIntervalStep.put(5, 30);
+            defaultInventoryIntervalStep.put(8, 300);
+            defaultInventoryIntervalStep.put(10, 3600);
+            final Pattern regIis = Pattern.compile("(\\d+):(\\d+)");
+
             sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.ad_type,b.plat,b.app_id,a.floor_price_switch,a.floor_price," +
                     "a.main_placement,a.ic_url,a.hb_status,a.batch_size,a.preload_timeout,a.fan_out," +
-                    "a.inventory_count,a.inventory_interval,a.reload_interval," +
+                    "a.inventory_count,a.inventory_interval,a.inventory_interval_step,a.reload_interval," +
                     "a.frequency_cap,a.frequency_unit,a.frequency_interval," +
                     "a.osv_max,a.osv_min,a.osv_blacklist,a.osv_whitelist,a.make_blacklist,a.make_whitelist," +
                     "a.brand_blacklist,a.brand_whitelist,a.model_blacklist,a.model_whitelist," +
@@ -211,10 +222,10 @@ public class SDKCacheBuilder extends PbBuiler {
                         .addAllOsvWhitelist(str2list(rs.getString("osv_whitelist")))
                         .addAllMakeBlacklist(str2list(rs.getString("make_blacklist")))
                         .addAllMakeWhitelist(str2list(rs.getString("make_whitelist")))
-                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist")))
-                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist")))
-                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist")))
-                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist")))
+                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist"), MODEL_SPLIT_STR))
+                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist"), MODEL_SPLIT_STR))
+                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist"), MODEL_SPLIT_STR))
+                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist"), MODEL_SPLIT_STR))
                         .addAllDidBlacklist(str2list(rs.getString("did_blacklist")))
                         .addAllSdkvBlacklist(str2list(rs.getString("sdkv_blacklist")));
 
@@ -226,6 +237,20 @@ public class SDKCacheBuilder extends PbBuiler {
                 }
                 pb.addAllScenes(sceneMap.getOrDefault(pb.getId(), Collections.emptyList()));
                 pb.putAllCountrySettings(countrySettings.getOrDefault(pb.getId(), Collections.emptyMap()));
+
+                String inventoryIntervalStep = rs.getString("inventory_interval_step");
+                if (StringUtils.isBlank(inventoryIntervalStep)) {
+                    pb.putAllInventoryIntervalStep(defaultInventoryIntervalStep);
+                } else {
+                    for (String nv : inventoryIntervalStep.split("[\r\n]")) {
+                        nv = nv.trim();
+                        Matcher m = regIis.matcher(nv);
+                        if (m.find()) {
+                            pb.putInventoryIntervalStep(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
+                        }
+                    }
+                }
+
                 w.writeDelimited(pb.build());
             });
         });
@@ -233,7 +258,7 @@ public class SDKCacheBuilder extends PbBuiler {
 
     void buildAdNetowrk() {
         build("om_adnetwork", cfg.dir, out -> {
-            String sql = "SELECT id,name,class_name,type,sdk_version FROM om_adnetwork WHERE status=1";
+            String sql = "SELECT id,name,class_name,type,sdk_version,bid_endpoint FROM om_adnetwork WHERE status=1";
             jdbcTemplate.query(sql, rs -> {
                 AdNetworkPB.AdNetwork adn = AdNetworkPB.AdNetwork.newBuilder()
                         .setId(rs.getInt("id"))
@@ -241,6 +266,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setClassName(StringUtils.defaultIfEmpty(rs.getString("class_name"), ""))
                         .setType(rs.getInt("type"))
                         .setSdkVersion(StringUtils.defaultIfEmpty(rs.getString("sdk_version"), ""))
+                        .setBidEndpoint(StringUtils.defaultIfEmpty(rs.getString("bid_endpoint"), ""))
                         .build();
                 out.writeDelimited(adn);
             });
@@ -262,7 +288,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setOsvMax(rs.getString("osv_max"))
                         .setOsvMin(rs.getString("osv_min"))
                         .addAllMakeDeviceBlacklist(str2list(rs.getString("make_device_blacklist"), String::toLowerCase))
-                        .addAllBrandModelBlacklist(str2list(rs.getString("brand_model_blacklist"), String::toLowerCase));
+                        .addAllBrandModelBlacklist(str2list(rs.getString("brand_model_blacklist"), String::toLowerCase, MODEL_SPLIT_STR));
                 String key = rs.getInt("pub_app_id") + "_" + rs.getInt("adn_id");
                 blockRule.computeIfAbsent(key, k -> new ArrayList<>()).add(rule.build());
             });
@@ -318,10 +344,10 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setOsvMin(StringUtils.defaultIfBlank(rs.getString("osv_min"), ""))
                         .addAllMakeBlacklist(str2list(rs.getString("make_blacklist")))
                         .addAllMakeWhitelist(str2list(rs.getString("make_whitelist")))
-                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist")))
-                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist")))
-                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist")))
-                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist")))
+                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist"), MODEL_SPLIT_STR))
+                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist"), MODEL_SPLIT_STR))
+                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist"), MODEL_SPLIT_STR))
+                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist"), MODEL_SPLIT_STR))
                         .setFrequencyCap(rs.getInt("frequency_cap"))
                         .setFrequencyUnit(rs.getInt("frequency_unit"))
                         .setFrequencyInterval(rs.getInt("frequency_interval"))
@@ -382,60 +408,59 @@ public class SDKCacheBuilder extends PbBuiler {
                 }
             });
 
-            String sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.placement_id,e.countries,a.segment_id,a.ab_test," +
-                    "a.auto_opt,a.sort_type,a.priority,a.status,a.create_user_id,a.create_time,a.priority" +
+            String sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.placement_id,e.countries,a.ab_test," +
+                    "a.auto_opt,a.sort_type,a.priority,a.status,a.create_user_id,a.create_time,a.priority," +
+                    "e.frequency, e.con_type, e.brand_whitelist, e.brand_blacklist, e.model_whitelist, e.model_blacklist," +
+                    "e.gender, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type" +
                     " FROM om_placement_rule a" +
                     " left join om_placement b on (a.placement_id=b.id)" +
                     " left join om_publisher_app c on (a.pub_app_id=c.id)" +
                     " left join om_publisher d on (a.publisher_id=d.id)" +
                     " left join om_placement_rule_segment e on (a.segment_id=e.id)" +
                     " where a.status=1 and b.status=1 and c.status=1 and d.status=1";
-            //Map<String, Object[]> placementCountrySegmentAbRule = new HashMap<>(ruleInstanceWeight.size());
             jdbcTemplate.query(sql, rs -> {
                 String countries = rs.getString("countries");
-                if (StringUtils.isNoneBlank(countries)) {
-                    Map<Integer, Integer> instanceWeight = ruleInstanceWeight.getOrDefault(rs.getInt("id"), Collections.emptyMap());
-                    for (String country : countries.split(",")) {
-                        int placementId = rs.getInt("placement_id");
-                        int segmentId = rs.getInt("segment_id");
-                        int abTest = rs.getInt("ab_test");
-                        /*int priority = rs.getInt("priority");
-                        long createTime = rs.getDate("create_time").getTime();
-                        String key = String.format("%d_%s_%d_%d", placementId, country, segmentId, abTest);
-                        Object[] rule = placementCountrySegmentAbRule.get(key);
-                        if (rule == null) {
-                            placementCountrySegmentAbRule.put(key, new Object[]{priority, createTime});
-                        } else {
-                            int oldPriority = (int) rule[0];
-                            long oldCreateTime = (long) rule[1];
-                            //按优先级取相同维度的Rule,当优先级设置相同时，取最近创建的Rule
-                            if (priority > oldPriority || (priority == oldPriority && createTime > oldCreateTime)) {
-                                placementCountrySegmentAbRule.put(key, new Object[]{priority, createTime});
-                            }
-                        }*/
-
-                        out.writeDelimited(AdNetworkPB.InstanceRule.newBuilder()
-                                .setId(rs.getInt("id"))
-                                .setPublisherId(rs.getInt("publisher_id"))
-                                .setPubAppId(rs.getInt("pub_app_id"))
-                                .setPlacementId(placementId)
-                                .setCountry(country)
-                                .setSortType(rs.getInt("sort_type"))
-                                .setAbtValue(abTest)
-                                .setSegmentId(segmentId)
-                                .setAutoSwitch(rs.getInt("auto_opt"))
-                                .setPriority(rs.getInt("priority"))
-                                .putAllInstanceWeight(instanceWeight)
-                                .build());
-                    }
+                if (StringUtils.isBlank(countries)) {
+                    return;
                 }
+                int ruleId = rs.getInt("id");
+                Map<Integer, Integer> instanceWeight = ruleInstanceWeight.getOrDefault(ruleId, Collections.emptyMap());
+                out.writeDelimited(AdNetworkPB.InstanceRule.newBuilder()
+                        .setId(ruleId)
+                        .setPublisherId(rs.getInt("publisher_id"))
+                        .setPubAppId(rs.getInt("pub_app_id"))
+                        .setPlacementId(rs.getInt("placement_id"))
+                        .addAllCountry(str2list(countries, ","))
+                        .setSortType(rs.getInt("sort_type"))
+                        .setAbtValue(rs.getInt("ab_test"))
+                        .setAutoSwitch(rs.getInt("auto_opt"))
+                        .setPriority(rs.getInt("priority"))
+                        .putAllInstanceWeight(instanceWeight)
+                        .setFrequency(rs.getInt("frequency"))
+                        .setConType(rs.getInt("con_type"))
+                        .addAllBrandWhitelist(str2list(rs.getString("brand_whitelist"), MODEL_SPLIT_STR))
+                        .addAllBrandBlacklist(str2list(rs.getString("brand_blacklist"), MODEL_SPLIT_STR))
+                        .addAllModelWhitelist(str2list(rs.getString("model_whitelist"), MODEL_SPLIT_STR))
+                        .addAllModelBlacklist(str2list(rs.getString("model_blacklist"), MODEL_SPLIT_STR))
+                        .setIapMin(rs.getFloat("iap_min"))
+                        .setIapMax(rs.getFloat("iap_max"))
+                        .setGender(rs.getInt("gender"))
+                        .setModelType(rs.getInt("model_type"))
+                        .addAllInterest(str2list(rs.getString("interest"), MODEL_SPLIT_STR))
+                        .addAllChannel(str2list(rs.getString("channel"), MODEL_SPLIT_STR))
+                        .setChannelBow(rs.getInt("channel_bow") == 1)
+                        .build());
             });
         });
     }
 
     void buildAbTest() {
         build("om_abtest", cfg.dir, out -> {
-            String sql = "SELECT a.placement_id,a_per,b_per,a_rule_id,b_rule_id,b.segment_id,c.countries FROM om_placement_abt a left join om_placement_rule b on (a.a_rule_id=b.id) left join om_placement_rule_segment c on (b.segment_id=c.id) where a.status=1 and b.status=1";
+            String sql = "SELECT a.placement_id,a_per,b_per,a_rule_id,b_rule_id,b.segment_id,c.countries" +
+                    " FROM om_placement_abt a" +
+                    " left join om_placement_rule b on (a.a_rule_id=b.id)" +
+                    " left join om_placement_rule_segment c on (b.segment_id=c.id)" +
+                    " where a.status=1 and b.status=1";
             jdbcTemplate.query(sql, rs -> {
                 int aPer = rs.getInt("a_per");
                 int bPer = rs.getInt("b_per");
@@ -456,52 +481,5 @@ public class SDKCacheBuilder extends PbBuiler {
             });
         });
     }
-
-    void buildSegment() {
-        build("om_segment", cfg.dir, out -> {
-            String sql = "SELECT a.id,a.placement_id,countries,frequency,con_type,brand_whitelist,brand_blacklist,model_whitelist,model_blacklist,iap_min,iap_max FROM om_placement_rule_segment a left join om_placement_rule b on (a.id=b.segment_id) where a.status=1 and b.status=1";
-            jdbcTemplate.query(sql, rs -> {
-                String countries = rs.getString("countries");
-                if (StringUtils.isNoneBlank(countries)) {
-                    for (String country : countries.split(",")) {
-                        List<String> brandWhitelist = Collections.emptyList();
-                        String brandWhitelistStr = rs.getString("brand_whitelist");
-                        if (StringUtils.isNoneBlank(brandWhitelistStr)) {
-                            brandWhitelist = Arrays.stream(brandWhitelistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
-                        }
-                        List<String> brandBlacklist = Collections.emptyList();
-                        String brandBlacklistStr = rs.getString("brand_blacklist");
-                        if (StringUtils.isNoneBlank(brandBlacklistStr)) {
-                            brandBlacklist = Arrays.stream(brandBlacklistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
-                        }
-                        List<String> modelWhitelist = Collections.emptyList();
-                        String modelWhitelistStr = rs.getString("model_whitelist");
-                        if (StringUtils.isNoneBlank(modelWhitelistStr)) {
-                            modelWhitelist = Arrays.stream(modelWhitelistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
-                        }
-                        List<String> modelBlacklist = Collections.emptyList();
-                        String modelBlacklistStr = rs.getString("model_blacklist");
-                        if (StringUtils.isNoneBlank(modelBlacklistStr)) {
-                            modelBlacklist = Arrays.stream(modelBlacklistStr.split(",")).filter(StringUtils::isNotBlank).collect(Collectors.toList());
-                        }
-                        out.writeDelimited(AdNetworkPB.Segment.newBuilder()
-                                .setId(rs.getInt("id"))
-                                .setPlacementId(rs.getInt("placement_id"))
-                                .setCountry(country)
-                                .setFrequency(rs.getInt("frequency"))
-                                .setConType(rs.getInt("con_type"))
-                                .addAllBrandWhitelist(brandWhitelist)
-                                .addAllBrandBlacklist(brandBlacklist)
-                                .addAllModelWhitelist(modelWhitelist)
-                                .addAllModelBlacklist(modelBlacklist)
-                                .setIapMin(rs.getFloat("iap_min"))
-                                .setIapMax(rs.getFloat("iap_max"))
-                                .build());
-                    }
-                }
-            });
-        });
-    }
-
 
 }

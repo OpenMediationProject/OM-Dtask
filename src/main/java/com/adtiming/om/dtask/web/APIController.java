@@ -4,11 +4,16 @@
 package com.adtiming.om.dtask.web;
 
 import com.adtiming.om.dtask.aws.DcenterJob;
+import com.adtiming.om.dtask.dto.MailSender;
+import com.adtiming.om.dtask.dto.ReportBuilderDTO;
+import com.adtiming.om.dtask.service.ReportBuilderService;
 import com.adtiming.om.dtask.util.Constants;
 import com.adtiming.om.dtask.util.Util;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -36,6 +41,9 @@ public class APIController {
 
     @Resource
     private DcenterJob dcenterJob;
+
+    @Resource
+    private ReportBuilderService reportBuilderService;
 
     /**
      * used for om-server init
@@ -142,6 +150,34 @@ public class APIController {
             }
         }, "backfillUserReport").start();
         return ResponseEntity.ok("success");
+    }
+
+    @GetMapping("/api/customreport/test")
+    public Object customReportTest(long id) {
+        try {
+            ReportBuilderDTO config = reportBuilderService.getReportBuilder(id);
+            if (config == null) {
+                return ResponseEntity.badRequest().body("config not exists");
+            }
+            if (StringUtils.isBlank(config.getRecipients())) {
+                return ResponseEntity.badRequest().body("Empty Recipients");
+            }
+            MailSender mailSender = reportBuilderService.getMailSender();
+            if (mailSender == null) {
+                return ResponseEntity.accepted().body("mailSender not found");
+            }
+            config.setTaskDay(LocalDate.now().plusDays(-1));
+            List<String> reportLines = reportBuilderService.buildReport(config);
+            String result = StringUtils.join(reportLines, '\n');
+            boolean sendStatus = reportBuilderService.sendToUser(config, result, mailSender);
+            if (sendStatus) {
+                return ResponseEntity.ok("OK");
+            }
+            return ResponseEntity.accepted().body("Send Failed");
+        } catch (Exception e) {
+            log.error("customReportTest error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Test Failed");
+        }
     }
 
 

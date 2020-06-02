@@ -116,7 +116,7 @@ public class ReportBuilderService {
         doTasks(builders, mailSender);
     }
 
-    MailSender getMailSender() {
+    public MailSender getMailSender() {
         String reportSender = dictManager.val("/om/report_sender");
         if (StringUtils.isBlank(reportSender)) {
             LOG.error("No report sender set yet");
@@ -187,7 +187,7 @@ public class ReportBuilderService {
         }
     }
 
-    boolean sendToUser(ReportBuilderDTO dto, String report, MailSender mailSender) {
+    public boolean sendToUser(ReportBuilderDTO dto, String report, MailSender mailSender) {
         try {
             HtmlEmail email = new HtmlEmail();
             email.setSSLOnConnect(mailSender.isSsl());
@@ -506,7 +506,7 @@ public class ReportBuilderService {
             StringBuilder statSql = new StringBuilder();
             statSql.append("select ").append(dauDimensions).append(",");
             statSql.append(" sum(ip_count) as ip_count,sum(dau) as dau,sum(deu) as deu");
-            statSql.append(" from stat_dau where 1=1 ");
+            statSql.append(" from stat_dau where publisher_id=").append(builder.getPublisherId());
             addDayCondition(builder, statSql);
 
             if (StringUtils.isNotBlank(builder.getCondPubAppList())) {
@@ -528,7 +528,7 @@ public class ReportBuilderService {
             StringBuilder statSql = new StringBuilder();
             statSql.append("select ").append(builder.getDimensions()).append(",");
             statSql.append(sumClause);
-            statSql.append(" from ").append(tableName).append(" where 1=1 ");
+            statSql.append(" from ").append(tableName).append(" where publisher_id=").append(builder.getPublisherId());
             addDayCondition(builder, statSql);
             if (StringUtils.isNotBlank(builder.getCondAdnList())) {
                 statSql.append(" and adn_id in(").append(builder.getCondAdnList()).append(")");
@@ -559,6 +559,15 @@ public class ReportBuilderService {
                 "cond_country_list,creator_id,execute_times,last_execute_time,create_time,lastmodify" +
                 " FROM om_report_builder where status = 1";
         return jdbcTemplate.query(sql, ReportBuilderDTO.ROWMAPPER);
+    }
+
+    public ReportBuilderDTO getReportBuilder(long id) {
+        String sql = "SELECT id,publisher_id,name,data_source,recipients,schedule,weekly_day,dimensions,metrics," +
+                "cond_day_period,cond_adn_list,cond_pub_app_list,cond_placement_list,cond_instance_list," +
+                "cond_country_list,creator_id,execute_times,last_execute_time,create_time,lastmodify" +
+                " FROM om_report_builder where id = ?";
+        List<ReportBuilderDTO> list = jdbcTemplate.query(sql, ReportBuilderDTO.ROWMAPPER, id);
+        return list.isEmpty() ? null : list.get(0);
     }
 
     private void addDayCondition(ReportBuilderDTO builder, StringBuilder statSql) {
