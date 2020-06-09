@@ -13,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -41,12 +42,13 @@ public class CurrencyService {
     @Resource
     private HttpClient httpClient;
 
-    public static final String APPKEY = "97f2011368aada34cb01d9264748350b";// 你的appkey
+    @Value("${currency.api.appkey}")
+    public String appKey;
     public static final String URL = "http://op.juhe.cn/onebox/exchange/currency";
     public static final String to = "USD";
 
     public float getCurrency(String from, String to) {
-        HttpGet req = new HttpGet(URL + "?key=" + APPKEY + "&from=" + from + "&to=" + to);
+        HttpGet req = new HttpGet(String.format("%s?key=%s&from=%s&to=%s", URL, appKey, from, to));
         req.setConfig(RequestConfig.custom().setSocketTimeout(3000).build());
         HttpEntity entity = null;
         try {

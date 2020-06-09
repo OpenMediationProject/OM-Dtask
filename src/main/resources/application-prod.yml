@@ -11,3 +11,4 @@ spring:
     url: jdbc:mysql://host/open_mediation?useCursorFetch=true&characterEncoding=utf8&useSSL=false&allowLoadLocalInfile=true
     username: user
     password: pwd
+currency.api.appkey: your appKey
