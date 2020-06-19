@@ -83,6 +83,11 @@ do
             sed -i "/url/s/open_mediation/${!env_var}/g" ${CONFFILE}/application-loc.yml
             continue
         fi
+	if [[ ${item_name} = "appkey" ]];then
+            loginfo_note "[Configuring] ${item_name} in ${CONFFILE}/application-loc.yml"
+            sed -i "s/currency.api.appkey.*/currency.api.appkey: ${!env_var}/g" ${CONFFILE}/application-loc.yml
+            continue
+        fi
         updateymlConfig "$item_name" "${!env_var}" "${CONFFILE}/application-loc.yml"
     fi
 
