@@ -411,7 +411,7 @@ public class SDKCacheBuilder extends PbBuiler {
             String sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.placement_id,e.countries,a.ab_test," +
                     "a.auto_opt,a.sort_type,a.priority,a.status,a.create_user_id,a.create_time,a.priority," +
                     "e.frequency, e.con_type, e.brand_whitelist, e.brand_blacklist, e.model_whitelist, e.model_blacklist," +
-                    "e.gender, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type" +
+                    "e.gender, e.age_max, e.age_min, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type" +
                     " FROM om_placement_rule a" +
                     " left join om_placement b on (a.placement_id=b.id)" +
                     " left join om_publisher_app c on (a.pub_app_id=c.id)" +
@@ -445,6 +445,8 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setIapMin(rs.getFloat("iap_min"))
                         .setIapMax(rs.getFloat("iap_max"))
                         .setGender(rs.getInt("gender"))
+                        .setAgeMin(rs.getInt("age_min"))
+                        .setAgeMax(rs.getInt("age_max"))
                         .setModelType(rs.getInt("model_type"))
                         .addAllInterest(str2list(rs.getString("interest"), MODEL_SPLIT_STR))
                         .addAllChannel(str2list(rs.getString("channel"), MODEL_SPLIT_STR))

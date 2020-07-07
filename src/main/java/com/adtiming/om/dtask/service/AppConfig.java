@@ -33,6 +33,9 @@ public class AppConfig {
 
     private boolean shouldStop = false;
 
+    @Value("${currency.apiKey}")
+    public String currencyApiKey;
+
     @PostConstruct
     private void init() {
         if (!dir.exists() && dir.mkdir())

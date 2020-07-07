@@ -149,7 +149,7 @@ public class DcenterJob {
             LOG.info("report common clear mysql, complete");
 
             String sql = "LOAD DATA LOCAL INFILE '" + dataDirectory + "/" + resultS3Key + "' INTO TABLE stat_lr FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES " +
-                    " (day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,adn_id,abt,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr)";
+                    " (day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,scene_id,adn_id,abt,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr,bid_req,bid_resp,bid_resp_price,bid_win,bid_win_price)";
             LOG.info("report common load 2 mysql start... sql: {}", sql);
             jdbcTemplate.execute(sql);
             LOG.info("report common load 2 mysql complete");

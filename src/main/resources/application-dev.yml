@@ -14,4 +14,6 @@ spring:
   ## thymeleaf
   thymeleaf:
     cache: false # 开发时关闭缓存,不然没法看到实时页面
-currency.api.appkey: your appKey
+
+# currency api key from https://fixer.io
+currency.apiKey: your_appKey
