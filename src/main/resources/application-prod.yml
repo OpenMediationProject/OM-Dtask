@@ -13,4 +13,4 @@ spring:
     password: pwd
 
 # currency api key from https://fixer.io
-currency.apiKey: your_appKey
+currency.api.appkey: REPLACE_YOUR_APPKEY

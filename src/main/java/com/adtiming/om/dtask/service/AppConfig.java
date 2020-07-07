@@ -33,7 +33,7 @@ public class AppConfig {
 
     private boolean shouldStop = false;
 
-    @Value("${currency.apiKey}")
+    @Value("${currency.api.appkey}")
     public String currencyApiKey;
 
     @PostConstruct
