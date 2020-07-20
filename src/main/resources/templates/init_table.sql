@@ -49,7 +49,8 @@ CREATE EXTERNAL TABLE IF NOT EXISTS lr (
          status int,
          msg string,
          price decimal(16, 6),
-         adType int
+         adType int,
+         bid int
 ) PARTITIONED BY (
          y string,
          m string,
