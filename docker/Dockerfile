@@ -12,7 +12,7 @@ ENV SERVERNAME "om-dtask"
 ARG GET_BUILDER_DIR="/data/OM-Dtask"
 RUN mkdir -p ${SERVERNAME}/{cache,log}
 ADD docker-entrypoint.sh /
-ADD application-loc.yml /${SERVERNAME}/
+COPY --from=builder ${GET_BUILDER_DIR}/src/main/resources/application-prod.yml /${SERVERNAME}/application-loc.yml
 ADD rsync /bin/
 ADD rsyncd.conf /etc/
 COPY --from=builder ${GET_BUILDER_DIR}/target/${SERVERNAME}.jar /${SERVERNAME}/
