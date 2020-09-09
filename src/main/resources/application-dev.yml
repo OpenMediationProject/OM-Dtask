@@ -8,9 +8,12 @@ spring:
   ## datasource
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.254.204:3306/open_mediation?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/ShanghaiallowLoadLocalInfile=true
-    username: diankou
-    password: Diankou@!123
+    url: jdbc:mysql://xxxx/open_mediation?useCursorFetch=true&characterEncoding=utf8&useSSL=false&allowLoadLocalInfile=true
+    username: xxx
+    password: xxxxx
   ## thymeleaf
   thymeleaf:
     cache: false # 开发时关闭缓存,不然没法看到实时页面
+
+# currency api key from https://fixer.io
+currency.api.appkey: REPLACE_YOUR_APPKEY

@@ -52,6 +52,7 @@ public class DBPreparer {
 
     @Scheduled(cron = "0 0 1 1 * ?", zone = "UTC")
     private void createMonthPartitions() {
+        createMonthPartitions("report_adnetwork_linked");
         createMonthPartitions("report_adnetwork_task");
         createMonthPartitions("report_adtiming");
         createMonthPartitions("report_admob");
@@ -65,6 +66,8 @@ public class DBPreparer {
         createMonthPartitions("report_chartboost");
         createMonthPartitions("report_tiktok");
         createMonthPartitions("report_mintegral");
+        createMonthPartitions("report_ironsource");
+        createMonthPartitions("report_mint");
     }
 
     private void createMonthPartitions(String table) {
