@@ -26,7 +26,7 @@ public class CommonCacheBuilder extends PbBuiler {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private Lock lock = new ReentrantLock();
+    private final Lock lock = new ReentrantLock();
 
     @Scheduled(fixedDelay = 2 * 60000)
     public void buildCache() {

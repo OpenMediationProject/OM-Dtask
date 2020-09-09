@@ -69,26 +69,33 @@ message InstanceRule {
     int32 publisher_id = 2;
     int32 pub_app_id = 3;
     int32 placement_id = 4;
-    string country = 5;
+    repeated string country = 5;
     int32 sort_type = 6; //排序类型,0:使用权重;1:使用绝对优先级
     ABTest abt = 7;
-    int32 segment_id = 8;
-    int32 auto_switch = 9; //自动优化开关
-    map<int32, int32> instance_weight = 10;
-    int32 priority = 11;
+    int32 auto_switch = 8; //自动优化开关
+    map<int32, int32> instance_weight = 9;
+    int32 priority = 10;
+
+    // Segment Conditions
+    int32 frequency = 11; // 用户当天展现次数
+    int32 con_type = 12; // 连接类型,二进制,从右到左(低位起) wifi,2G,3G,4G
+    repeated string brand_whitelist = 13;
+    repeated string brand_blacklist = 14;
+    repeated string model_whitelist = 15;
+    repeated string model_blacklist = 16;
+    float iap_min = 17;
+    float iap_max = 18;
+
+    // 2020-05-14
+    int32 model_type = 19; // 设备类型定向二进制表示, 0无定向, bit pos {0:Phone,1:Pad,2:TV}
+    bool channel_bow = 20; // channel 定向方式, 0:黑名单,1:白名单
+    repeated string channel = 21; //  国内Android channel 定向, 换行分隔
+    int32 gender = 22;
+    repeated string interest = 23;
+
+    // 2020-07-06
+    int32 age_min = 24;
+    int32 age_max = 25;
+
 }
 
-message Segment {
-    int32 id = 1;
-    int32 placement_id = 2;
-    string country = 3;
-    int32 frequency = 4; // 用户当天展现次数
-    int32 con_type = 5; // 连接类型,二进制,从右到左(低位起) wifi,2G,3G,4G
-    repeated string brand_whitelist = 6;
-    repeated string brand_blacklist= 7;
-    repeated string model_whitelist = 8;
-    repeated string model_blacklist = 9;
-    float iap_min = 10;
-    float iap_max = 11;
-
-}

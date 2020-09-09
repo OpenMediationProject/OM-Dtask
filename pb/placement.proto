@@ -21,7 +21,8 @@ message Placement {
     int32 frequency_unit = 12;
     int32 frequency_interval = 13;
     int32 preload_timeout = 22;
-//    int32 auto_preloading = 23; // 是否预加载,默认开启,0:关闭预加载;1:开启
+    // 自动补库存阈值间隔, 多行分隔, 单行格式: "{连续失败次数}:{间隔}"
+    map<int32, int32> inventory_interval_step = 23;
     int32 batch_size = 24;
     int32 inventory_count = 25;
     int32 inventory_interval = 26;
@@ -29,8 +30,6 @@ message Placement {
 
     float floor_price = 28; // BID Price, decimal(8,3)
     map<string, float> country_floor_price = 29; // country_floor_price
-
-    //bool ab_test = 30; //ABTest开关, 0:OFF,1:ON
 
     repeated Scene scenes = 30; // 场景列表
 

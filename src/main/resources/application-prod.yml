@@ -1,6 +1,5 @@
 app:
   env: prod
-  cache-path: /data/om-dtask/cache
 
 logging:
   config: classpath:log4j2-prod.xml
@@ -9,6 +8,9 @@ spring:
   ## datasource
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://host/open_mediation?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&allowLoadLocalInfile=true
+    url: jdbc:mysql://host/open_mediation?useCursorFetch=true&characterEncoding=utf8&useSSL=false&allowLoadLocalInfile=true
     username: user
     password: pwd
+
+# currency api key from https://fixer.io
+currency.api.appkey: REPLACE_YOUR_APPKEY
