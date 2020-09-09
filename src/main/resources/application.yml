@@ -68,3 +68,6 @@ aws:
   athena:
     database: open_mediation
     data-dir: /data/om-dtask/data/aws
+
+# currency api key from https://fixer.io
+currency.api.appkey: 70d9500b1cc724dd6f706d8bdd02ac47
