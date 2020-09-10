@@ -33,7 +33,6 @@ public class DcenterScheduler {
             return;
         }
         LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(-1);
-        dcenterJob.addPartition(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
     }
 
@@ -47,7 +46,9 @@ public class DcenterScheduler {
         }
         LocalDate executeDate = LocalDate.now(ZoneOffset.UTC).plusDays(-1);
         dcenterJob.userReport(executeDate);
-        executeDate = executeDate.plusDays(-7);
-        dcenterJob.clearDataDirectory(executeDate);
+        for (int i = 0; i < 3; i++) {
+            dcenterJob.userAdRevenue(executeDate.plusDays(-i));
+        }
+        dcenterJob.clearTmpLocalDataDirectory(executeDate.plusDays(-7));
     }
 }

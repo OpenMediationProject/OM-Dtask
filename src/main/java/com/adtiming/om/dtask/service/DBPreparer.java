@@ -68,6 +68,7 @@ public class DBPreparer {
         createMonthPartitions("report_mintegral");
         createMonthPartitions("report_ironsource");
         createMonthPartitions("report_mint");
+        createMonthPartitions("report_helium");
     }
 
     private void createMonthPartitions(String table) {

@@ -44,5 +44,6 @@ GROUP BY
     coalesce(iid, 0),
     coalesce(scene, 0),
     coalesce(mid, 0),
-    coalesce(abt, 0)
+    coalesce(abt, 0),
+    coalesce(bid, 0)
 ;

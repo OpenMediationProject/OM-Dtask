@@ -34,9 +34,12 @@ public class AthenaExecutor {
             QueryExecutionState queryExecutionState = QueryExecutionState.fromValue(getQueryExecutionResult.getQueryExecution().getStatus().getState());
             switch (queryExecutionState) {
                 case FAILED:
-                    LOG.error("query failed, id: {}, msg: {}", queryExecutionId, getQueryExecutionResult.getQueryExecution().getStatus().getStateChangeReason());
+                    String stateChangeReason = getQueryExecutionResult.getQueryExecution().getStatus().getStateChangeReason();
+                    LOG.error("query failed, id: {}, msg: {}", queryExecutionId, stateChangeReason);
+                    throw new RuntimeException("query failed, id: " + queryExecutionId + ", msg: " + stateChangeReason);
                 case CANCELLED:
                     LOG.error("query was cancelled, id: {}", queryExecutionId);
+                    throw new RuntimeException("query was cancelled, id: " + queryExecutionId);
                 case SUCCEEDED:
                     isQueryStillRunning = false;
                     break;
@@ -49,5 +52,4 @@ public class AthenaExecutor {
             }
         }
     }
-
 }
