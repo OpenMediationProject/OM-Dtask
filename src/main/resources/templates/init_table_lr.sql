@@ -59,13 +59,11 @@ CREATE EXTERNAL TABLE IF NOT EXISTS lr (
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH
-    SERDEPROPERTIES (
-        'serialization.format' = '1',
+    SERDEPROPERTIES ('serialization.format' = '1',
         'mapping.req_id' = 'reqId',
         'mapping.server_ts' = 'serverTs',
         'mapping.publisher_id' = 'publisherId',
-        'mapping.pub_app_id' = 'pubAppId'
-    )
-    LOCATION 's3://[(${s3Bucket})]/[(${tableDataPath})]/[(${tableName})]/'
+        'mapping.pub_app_id' = 'pubAppId' )
+    LOCATION 's3://[(${s3Bucket})]/[(${tableDataPath})]/lr/'
     TBLPROPERTIES ('has_encrypted_data'='false')
 ;

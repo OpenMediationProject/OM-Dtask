@@ -3,6 +3,10 @@
 
 package com.adtiming.om.dtask.aws;
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.List;
+
 public class AthenaConstants {
 
     public static final long SLEEP_AMOUNT_IN_MS = 1000;
@@ -10,5 +14,8 @@ public class AthenaConstants {
     public static final String DATA_PATH_ATHENA = "athena";
     public static final String DATA_PATH_TABLE = "om";
     public static final String TABLE_NAME_LR = "lr";
+    public static final String TABLE_NAME_ODS_OM_ADNETWORK = "ods_om_adnetwork";
+    public static final String TABLE_NAME_ODS_STAT_ADNETWORK = "ods_stat_adnetwork";
+    public static final List<String> TABLE_NAMES = ImmutableList.of(TABLE_NAME_LR, TABLE_NAME_ODS_OM_ADNETWORK, TABLE_NAME_ODS_STAT_ADNETWORK);
 
 }
