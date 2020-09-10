@@ -1,0 +1,1 @@
+ALTER TABLE [(${tableName})] ADD IF NOT EXISTS PARTITION (y='[(${year})]', m='[(${month})]', d='[(${day})]') location 's3://[(${s3Bucket})]/[(${tableDataPath})]/[(${tableName})]/[(${year})]/[(${month})]/[(${day})]/[(${hour})]';
