@@ -1,4 +1,4 @@
-CREATE EXTERNAL TABLE IF NOT EXISTS open_mediation.ods_om_adnetwork
+CREATE EXTERNAL TABLE IF NOT EXISTS ods_om_adnetwork
 (
     id                 int,
     name               string,
