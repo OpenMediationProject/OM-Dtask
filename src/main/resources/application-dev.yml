@@ -16,4 +16,4 @@ spring:
     cache: false # 开发时关闭缓存,不然没法看到实时页面
 
 # currency api key from https://fixer.io
-currency.api.appkey: 34edd354c807eb087180ed9205346e34
+currency.api.appkey: REPLACE_YOUR_APPKEY
