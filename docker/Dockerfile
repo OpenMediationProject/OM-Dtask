@@ -1,25 +1,23 @@
-FROM adtiming/ombuilder as builder
-ARG BUILDER_URL="https://github.com/AdTiming/OM-Dtask.git"
-ARG BUILDER_DIR="OM-Dtask"
-RUN git clone ${BUILDER_URL} && \
-    cd ${BUILDER_DIR} && \
-    mvn clean package -Dmaven.test.skip=true
-
 FROM adtiming/omjava
 MAINTAINER openmediation
 ENV SYSTEMNAME "omsystem"
 ENV SERVERNAME "om-dtask"
-ARG GET_BUILDER_DIR="/data/OM-Dtask"
-RUN mkdir -p ${SERVERNAME}/{cache,log}
-ADD docker-entrypoint.sh /
-COPY --from=builder ${GET_BUILDER_DIR}/src/main/resources/application-prod.yml /${SERVERNAME}/application-loc.yml
-ADD rsync /bin/
-ADD rsyncd.conf /etc/
-COPY --from=builder ${GET_BUILDER_DIR}/target/${SERVERNAME}.jar /${SERVERNAME}/
+ENV OMYML_DBADDRESS ""
+ENV OMYML_DBNAME ""
+ENV OMYML_USERNAME ""
+ENV OMYML_PASSWORD ""
+ENV OMRSYNC_ALLOWHOSTS ""
+ARG JAR_FILE
+RUN mkdir -p ${SERVERNAME}/cache
+ADD docker/docker-entrypoint.sh /
+ADD docker/application-loc.yml /${SERVERNAME}
+ADD docker/rsync /bin/
+ADD docker/rsyncd.conf /etc/
+ADD ${JAR_FILE} /${SERVERNAME}
 WORKDIR /
-RUN chmod +x /docker-entrypoint.sh /bin/rsync /${SERVERNAME}/${SERVERNAME}.jar
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost:19012/ || exit 1
-EXPOSE 19012 873
+RUN chmod +x /docker-entrypoint.sh /bin/rsync
+EXPOSE 19012
 ENTRYPOINT ["/docker-entrypoint.sh"] 
 CMD ["om-dtask"]

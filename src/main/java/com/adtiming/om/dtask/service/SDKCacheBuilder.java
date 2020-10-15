@@ -36,12 +36,12 @@ public class SDKCacheBuilder extends PbBuiler {
 
     private final File dir = new File("cache");
 
-    private final String MODEL_SPLIT_STR = "\n";
+    private final String MODEL_SPLIT_STR = "#";
 
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
-        if (!dir.exists() && dir.mkdir())
-            log.info("mkdir {}", dir);
+        if (!cfg.getDir().exists() && cfg.getDir().mkdir())
+            log.info("mkdir {}", cfg.getDir());
         /*if (!cfg.isProd())
             return;*/
         long start = System.currentTimeMillis();

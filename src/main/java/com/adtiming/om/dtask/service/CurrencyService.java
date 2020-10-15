@@ -96,7 +96,7 @@ public class CurrencyService {
             if (exchangeMap != null) {
                 List<Object[]> insertParam = new ArrayList<>(exchangeMap.size());
                 List<Object[]> insertUpdateParam = new ArrayList<>(exchangeMap.size());
-                String day = LocalDateTime.now(cfg.TZ).format(cfg.LOG_DATE_FORMAT);
+                String day = LocalDateTime.now().format(cfg.LOG_DATE_FORMAT);
                 exchangeMap.forEach((k, v) -> {
                     log.info("from:{},rate:{}", k, v);
                     insertParam.add(new Object[]{day, k, "USD", v});
