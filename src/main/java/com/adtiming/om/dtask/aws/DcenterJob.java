@@ -3,9 +3,9 @@
 
 package com.adtiming.om.dtask.aws;
 
+import com.adtiming.om.dtask.service.DictManager;
 import com.adtiming.om.dtask.service.StmtCreator;
 import com.adtiming.om.dtask.util.Constants;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Splitter;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
@@ -35,6 +35,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DcenterJob {
@@ -61,6 +62,9 @@ public class DcenterJob {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
+    @Resource
+    private DictManager dictManager;
+
     @PostConstruct
     private void init() {
         if (awsConfig.isDisabled()) {
@@ -71,10 +75,8 @@ public class DcenterJob {
         String month = executeDateTime.format(Constants.FORMATTER_MM);
         String day = executeDateTime.format(Constants.FORMATTER_DD);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
-        new Thread(() -> {
-            initDatabase(resultDirOnS3);
-            initTable(resultDirOnS3);
-        }, "s3Init").start();
+        initDatabase(resultDirOnS3);
+        initTable(resultDirOnS3);
     }
 
     private void initDatabase(String resultDirOnS3) {
@@ -104,13 +106,38 @@ public class DcenterJob {
         LOG.info("init table complete, all");
     }
 
+    public void collectDatas(LocalDateTime executeDateTime) {
+        collectDatas(AthenaConstants.TABLE_NAME_LR, executeDateTime);
+        collectDatas(AthenaConstants.TABLE_NAME_IAP, executeDateTime);
+    }
+
+    public void collectDatas(String tableName, LocalDateTime executeDateTime) {
+        String year = executeDateTime.format(Constants.FORMATTER_YYYY);
+        String month = executeDateTime.format(Constants.FORMATTER_MM);
+        String day = executeDateTime.format(Constants.FORMATTER_DD);
+        String hour = executeDateTime.format(Constants.FORMATTER_HH);
+        addPartition(tableName, year, month, day, hour);
+        addPartition(tableName, year, month, day, hour);
+    }
+
+    private void addPartition(String tableName, String year, String month, String day, String hour) {
+        HashMap<String, Object> valueMap = new HashMap<>();
+        valueMap.put("year", year);
+        valueMap.put("month", month);
+        valueMap.put("day", day);
+        valueMap.put("hour", hour);
+        valueMap.put("s3Bucket", awsConfig.getS3Bucket());
+        valueMap.put("tableDataPath", AthenaConstants.DATA_PATH_TABLE);
+        valueMap.put("tableName", tableName);
+        addPartition("add_hourly_partition", valueMap);
+    }
+
+
     public void commonReport(LocalDateTime executeDateTime) {
         String year = executeDateTime.format(Constants.FORMATTER_YYYY);
         String month = executeDateTime.format(Constants.FORMATTER_MM);
         String day = executeDateTime.format(Constants.FORMATTER_DD);
         String hour = executeDateTime.format(Constants.FORMATTER_HH);
-
-        addLrPartition(year, month, day, hour);
 
         HashMap<String, Object> valueMap = new HashMap<>();
         valueMap.put("year", year);
@@ -146,17 +173,6 @@ public class DcenterJob {
         LOG.info("report common, load 2 mysql complete");
     }
 
-    private void addLrPartition(String year, String month, String day, String hour) {
-        HashMap<String, Object> valueMap = new HashMap<>();
-        valueMap.put("year", year);
-        valueMap.put("month", month);
-        valueMap.put("day", day);
-        valueMap.put("hour", hour);
-        valueMap.put("s3Bucket", awsConfig.getS3Bucket());
-        valueMap.put("tableDataPath", AthenaConstants.DATA_PATH_TABLE);
-        valueMap.put("tableName", AthenaConstants.TABLE_NAME_LR);
-        addPartition("add_hourly_partition", valueMap);
-    }
 
     public void userReport(LocalDate executeDate) {
         String year = executeDate.format(Constants.FORMATTER_YYYY);
@@ -208,35 +224,25 @@ public class DcenterJob {
         }
     }
 
-    public void userAdRevenue(LocalDate executeDate) {
+    public void syncOdsOmAdnetwork2Athena(LocalDate executeDate) {
         String year = executeDate.format(Constants.FORMATTER_YYYY);
         String month = executeDate.format(Constants.FORMATTER_MM);
         String day = executeDate.format(Constants.FORMATTER_DD);
-
-        syncOdsOmAdnetwork2Athena(year, month, day);
-        syncOdsStatAdnetwork2Athena(year, month, day);
-        String queryExecutionId = calculateUar(year, month, day);
-        splitPubAppUar(year, month, day, queryExecutionId);
-        compressPubAppUar(year, month, day);
-        uploadPubAppUar(year, month, day);
-    }
-
-    private void syncOdsOmAdnetwork2Athena(String year, String month, String day) {
         Path odsOmAdnetworkPath = dumpOdsOmAdnetworkData(year, month, day);
         String s3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, AthenaConstants.TABLE_NAME_ODS_OM_ADNETWORK, "data.dsv");
-        LOG.info("uar, upload om adnetwork, start...");
+        LOG.info("upload om adnetwork, start...");
         s3Executor.uploadObject(awsConfig.getS3Bucket(), s3Key, new File(odsOmAdnetworkPath.toUri()));
-        LOG.info("uar, upload om adnetwork, complete");
+        LOG.info("upload om adnetwork, complete");
     }
 
     private Path dumpOdsOmAdnetworkData(String year, String month, String day) {
-        LOG.info("uar, dump om adnetwork, start...");
+        LOG.info("dump om adnetwork, start...");
         String odsOmAdnetworkFile = String.join("/", year + month + day, "mysql", AthenaConstants.TABLE_NAME_ODS_OM_ADNETWORK + ".dsv");
         Path odsOmAdnetworkPath = Paths.get(dataDirectory, odsOmAdnetworkFile);
         try {
             Files.createDirectories(odsOmAdnetworkPath.getParent());
         } catch (IOException e) {
-            throw new RuntimeException("uar, dump om adnetwork, create local dir error", e);
+            throw new RuntimeException("dump om adnetwork, create local dir error", e);
         }
         String sql = "select id, name, class_name, descn from om_adnetwork";
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(odsOmAdnetworkPath)) {
@@ -251,40 +257,45 @@ public class DcenterJob {
                 try {
                     bufferedWriter.write(data);
                 } catch (IOException e) {
-                    LOG.error("uar, dump om adnetwork, write data error: {}", data, e);
+                    LOG.error("dump om adnetwork, write data error: {}", data, e);
                 }
             });
         } catch (IOException e) {
             throw new RuntimeException("uar, dump om adnetwork, write data error", e);
         }
-        LOG.info("uar, dump om adnetwork, complete");
+        LOG.info("dump om adnetwork, complete");
         return odsOmAdnetworkPath;
     }
 
-    private void syncOdsStatAdnetwork2Athena(String year, String month, String day) {
+    public void syncOdsStatAdnetwork2Athena(LocalDate executeDate) {
+        String year = executeDate.format(Constants.FORMATTER_YYYY);
+        String month = executeDate.format(Constants.FORMATTER_MM);
+        String day = executeDate.format(Constants.FORMATTER_DD);
+
         Path odsStatAdnetworkPath = dumpOdsStatAdnetworkData(year, month, day);
         String s3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, AthenaConstants.TABLE_NAME_ODS_STAT_ADNETWORK, year, month, day, "data.dsv");
-        LOG.info("uar, upload stat adnetwork, start...");
+        LOG.info("upload stat adnetwork, start...");
         s3Executor.uploadObject(awsConfig.getS3Bucket(), s3Key, new File(odsStatAdnetworkPath.toUri()));
-        LOG.info("uar, upload stat adnetwork, complete");
+        LOG.info("upload stat adnetwork, complete");
         addOdsStatAdnetworkPartition(year, month, day);
     }
 
     private Path dumpOdsStatAdnetworkData(String year, String month, String day) {
-        LOG.info("uar, dump stat adnetwork, start...");
+        LOG.info("dump stat adnetwork, start...");
         String odsStatAdnetworkFile = String.join("/", year + month + day, "mysql", AthenaConstants.TABLE_NAME_ODS_STAT_ADNETWORK + ".dsv");
         Path odsStatAdnetworkPath = Paths.get(dataDirectory, odsStatAdnetworkFile);
         try {
             Files.createDirectories(odsStatAdnetworkPath.getParent());
         } catch (IOException e) {
-            LOG.error("uar, dump stat adnetwork, create local dir error", e);
+            LOG.error("dump stat adnetwork, create local dir error", e);
             throw new RuntimeException("uar, dump stat adnetwork, create local dir error", e);
         }
-        String sql = "select id, pub_app_id, platform, adn_id, country, instance_id, cost from stat_adnetwork where day=?";
+        String sql = "select id, publisher_id, pub_app_id, platform, adn_id, country, instance_id, cost from stat_adnetwork where day=?";
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(odsStatAdnetworkPath)) {
             jdbcTemplate.query(new StmtCreator(sql, String.join("-", year, month, day)), rs -> {
                 String data = String.join("\u0001",
                         rs.getString("id"),
+                        rs.getString("publisher_id"),
                         rs.getString("pub_app_id"),
                         rs.getString("platform"),
                         rs.getString("adn_id"),
@@ -296,19 +307,19 @@ public class DcenterJob {
                 try {
                     bufferedWriter.write(data);
                 } catch (IOException e) {
-                    LOG.error("uar, dump stat adnetwork, write data error", e);
+                    LOG.error("dump stat adnetwork, write data error", e);
                     throw new RuntimeException("uar, dump stat adnetwork, write data error", e);
                 }
             });
         } catch (IOException e) {
-            LOG.error("uar, dump stat adnetwork, write data error", e);
+            LOG.error("dump stat adnetwork, write data error", e);
             throw new RuntimeException("uar, dump stat adnetwork, write data error", e);
         }
-        LOG.info("uar, dump stat adnetwork, complete");
+        LOG.info("dump stat adnetwork, complete");
         return odsStatAdnetworkPath;
     }
 
-    public void addOdsStatAdnetworkPartition(String year, String month, String day) {
+    private void addOdsStatAdnetworkPartition(String year, String month, String day) {
         HashMap<String, Object> valueMap = new HashMap<>();
         valueMap.put("year", year);
         valueMap.put("month", month);
@@ -317,6 +328,17 @@ public class DcenterJob {
         valueMap.put("tableDataPath", AthenaConstants.DATA_PATH_TABLE);
         valueMap.put("tableName", AthenaConstants.TABLE_NAME_ODS_STAT_ADNETWORK);
         addPartition("add_daily_partition", valueMap);
+    }
+
+    public void userAdRevenue(LocalDate executeDate) {
+        String year = executeDate.format(Constants.FORMATTER_YYYY);
+        String month = executeDate.format(Constants.FORMATTER_MM);
+        String day = executeDate.format(Constants.FORMATTER_DD);
+
+        String queryExecutionId = calculateUar(year, month, day);
+        splitPubAppUar(year, month, day, queryExecutionId);
+        compressPubAppUar(year, month, day);
+        uploadPubAppUar(year, month, day);
     }
 
     private String calculateUar(String year, String month, String day) {
@@ -373,7 +395,7 @@ public class DcenterJob {
     private void compressPubAppUar(String year, String month, String day) {
         LOG.info("uar, compresss publisher app data start...");
         Path pubAppUarLocalDir = Paths.get(dataDirectory, year + month + day, "uar");
-        Path pubAppUarGzLocalDir = Paths.get(dataDirectory, year + month + day, "uar_gz");
+        Path pubAppUarGzLocalDir = Paths.get(dataDirectory, year + month + day, "uar_zip");
         try {
             Files.createDirectories(pubAppUarGzLocalDir);
         } catch (IOException e) {
@@ -381,7 +403,7 @@ public class DcenterJob {
             throw new RuntimeException("uar, compresss publisher app data, create dir fail", e);
         }
         int pubAppUarLocalFileSize = 0;
-        File[] pubAppUarLocalFiles = new File(pubAppUarLocalDir.toUri()).listFiles();
+        File[] pubAppUarLocalFiles = new File(pubAppUarLocalDir.toUri()).listFiles(pathName -> !pathName.isHidden());
         if (pubAppUarLocalFiles != null) {
             for (File pubAppUarLocalFile : pubAppUarLocalFiles) {
                 compress2Zip(pubAppUarGzLocalDir, pubAppUarLocalFile);
@@ -393,16 +415,13 @@ public class DcenterJob {
 
     private void uploadPubAppUar(String year, String month, String day) {
         LOG.info("uar, upload publisher app data start...");
-        Path pubAppUarLocalDir = Paths.get(dataDirectory, year + month + day, "uar_gz");
+        Path pubAppUarLocalDir = Paths.get(dataDirectory, year + month + day, "uar_zip");
         int pubAppUarLocalFileSize = 0;
-        File[] pubAppUarLocalFiles = new File(pubAppUarLocalDir.toUri()).listFiles();
+        File[] pubAppUarLocalFiles = new File(pubAppUarLocalDir.toUri()).listFiles(pathName -> !pathName.isHidden());
         if (pubAppUarLocalFiles != null) {
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentType("text/csv");
-            objectMetadata.setContentEncoding("gzip");
             for (File pubAppUarLocalFile : pubAppUarLocalFiles) {
                 String pubAppUarDataS3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, "uar_data", year, month, day, pubAppUarLocalFile.getName());
-                s3Executor.uploadObject(awsConfig.getS3Bucket(), pubAppUarDataS3Key, pubAppUarLocalFile, objectMetadata);
+                s3Executor.uploadObject(awsConfig.getS3Bucket(), pubAppUarDataS3Key, pubAppUarLocalFile);
             }
             pubAppUarLocalFileSize = pubAppUarLocalFiles.length;
         }
@@ -429,7 +448,7 @@ public class DcenterJob {
     }
 
     private void compress2Zip(Path parentZipPath, File dataFile) {
-        Path zipFilePath = Paths.get(parentZipPath.toAbsolutePath().toString(), dataFile.getName() + ".gz");
+        Path zipFilePath = Paths.get(parentZipPath.toAbsolutePath().toString(), dataFile.getName() + ".zip");
         try (ZipArchiveOutputStream zipArchiveOutputStream = new ZipArchiveOutputStream(zipFilePath.toFile())) {
             ZipArchiveEntry zipArchiveEntry = new ZipArchiveEntry(dataFile, dataFile.getName());
             zipArchiveOutputStream.putArchiveEntry(zipArchiveEntry);
@@ -449,5 +468,70 @@ public class DcenterJob {
             LOG.error("compress 2 zip fail ", e);
             throw new RuntimeException("compress 2 zip fail", e);
         }
+    }
+
+    public void collectDwsPublisherUser(LocalDate executeDate) {
+        Object collectDate = executeDate.format(Constants.FORMATTER_YYYYMMDD);
+        String s3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, AthenaConstants.TABLE_NAME_DWS_PUBLISHER_USER, "ymd=" + collectDate + "/");
+        LOG.info("collect dws publisher user, clean dir, start...");
+        s3Executor.deleteObject(awsConfig.getS3Bucket(), s3Key);
+        LOG.info("collect dws publisher user, clean dir, complete");
+
+        Map<String, Object> valueMap = new HashMap<>();
+        valueMap.put("year", executeDate.format(Constants.FORMATTER_YYYY));
+        valueMap.put("month", executeDate.format(Constants.FORMATTER_MM));
+        valueMap.put("day", executeDate.format(Constants.FORMATTER_DD));
+
+        LOG.info("collect dws publisher user, query start...");
+        String reportSql = this.templateEngine.process("collect_dws_publisher_user", new Context(null, valueMap));
+        LOG.debug("collect dws publisher user, query sql:\n {}", reportSql);
+        String resultDirOnS3 = getAthenaQueryResultDirOnS3(executeDate.format(Constants.FORMATTER_YYYY), executeDate.format(Constants.FORMATTER_MM), executeDate.format(Constants.FORMATTER_DD));
+        String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
+        athenaExecutor.waitForQueryToComplete(queryExecutionId);
+        LOG.info("collect dws publisher user,, query complete, id: {}, result directory: {} ", queryExecutionId, resultDirOnS3);
+    }
+
+    public void ltvReport(LocalDate executeDate) {
+        String year = executeDate.format(Constants.FORMATTER_YYYY);
+        String month = executeDate.format(Constants.FORMATTER_MM);
+        String day = executeDate.format(Constants.FORMATTER_DD);
+
+        HashMap<String, Object> valueMap = new HashMap<>();
+        valueMap.put("executeYear", year);
+        valueMap.put("executeMonth", month);
+        valueMap.put("executeDay", day);
+
+        int ltvDateRange = dictManager.intVal("/om/ltv_date_range");
+        LocalDate beginDate = executeDate.minusDays(ltvDateRange);
+        valueMap.put("beginYear", beginDate.format(Constants.FORMATTER_YYYY));
+        valueMap.put("beginMonth", beginDate.format(Constants.FORMATTER_MM));
+        valueMap.put("beginDay", beginDate.format(Constants.FORMATTER_DD));
+
+        LOG.info("ltv report, query start...");
+        String reportSql = this.templateEngine.process("report_ltv", new Context(null, valueMap));
+        LOG.debug("ltv report, query sql:\n {}", reportSql);
+        String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
+        String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
+        athenaExecutor.waitForQueryToComplete(queryExecutionId);
+        LOG.info("ltv report, query complete, id: {}, result directory: {} ", queryExecutionId, resultDirOnS3);
+
+        LOG.info("ltv report, download start...");
+        Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
+        LOG.info("ltv report, download complete");
+
+        // LOAD TO MYSQL
+        LOG.info("ltv report, clear, clear mysql start...");
+        String clearSql = "DELETE FROM stat_user_ltv WHERE day='" + year + month + day + "'";
+        LOG.debug("ltv report, clear mysql sql:\n {}", clearSql);
+        jdbcTemplate.execute(clearSql);
+        LOG.info("ltv report, clear mysql, complete");
+
+        LOG.info("ltv report, load 2 mysql start...");
+        String sql = "LOAD DATA LOCAL INFILE '" + localPath +
+                "' INTO TABLE stat_user_ltv FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES " +
+                " (day,base_date,retention_day,country,publisher_id,pub_app_id,user_cnt_new,user_cnt_old,retention_cnt_new,retention_cnt_old,mediation_value_new,mediation_value_old,iap_value_new,iap_value_old,total_value_new,total_value_old)";
+        LOG.debug("ltv report, load 2 mysql sql:\n {}", sql);
+        jdbcTemplate.execute(sql);
+        LOG.info("ltv report, load 2 mysql complete");
     }
 }

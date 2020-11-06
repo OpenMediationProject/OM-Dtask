@@ -92,7 +92,39 @@ public class APIController {
     }
 
     /**
-     * back fill common report data, hourly within give time (beginDateHour <= the time  < endDateHour)
+     * backfill collect data, hourly within give time (beginDateHour <= the time  < endDateHour)
+     *
+     * @param tableName     tablename
+     * @param beginDateHour begin date and hour, format: yyyyMMddHH
+     * @param endDateHour   end date and hour , format: yyyyMMddHH
+     */
+    @RequestMapping("/dc/backfill/collect/data")
+    public ResponseEntity<?> backfillCollectData(String tableName, String beginDateHour, String endDateHour) {
+        new Thread(new Runnable() {
+            LocalDateTime beginDateTime = LocalDateTime.parse(beginDateHour, Constants.FORMATTER_YYYYMMDDHH);
+            final LocalDateTime endDateTime = LocalDateTime.parse(endDateHour, Constants.FORMATTER_YYYYMMDDHH);
+
+            @Override
+            public void run() {
+                try {
+                    log.info("backfill collect data, table: {}, beginDateHour: {}, endDateHour: {}, start", tableName, beginDateHour, endDateHour);
+                    while (beginDateTime.isBefore(endDateTime)) {
+                        log.info("backfill collect data, table: {}, deal: {}", tableName, beginDateTime);
+                        dcenterJob.collectDatas(tableName, beginDateTime);
+                        beginDateTime = beginDateTime.plusHours(1);
+                    }
+                    log.info("backfill collect data, table: {} beginDateHour: {}, endDateHour: {}, complete", tableName, beginDateHour, endDateHour);
+                } catch (Exception e) {
+                    log.error("backfill collect data report error", e);
+                }
+            }
+        }, "backfillCollectData").start();
+        return ResponseEntity.ok("success");
+    }
+
+
+    /**
+     * backfill common report data, hourly within give time (beginDateHour <= the time  < endDateHour)
      *
      * @param beginDateHour begin date and hour, format: yyyyMMddHH
      * @param endDateHour   end date and hour , format: yyyyMMddHH
@@ -122,7 +154,7 @@ public class APIController {
     }
 
     /**
-     * back fill user report data, hourly within give date (beginDate <= the time  < endDate)
+     * backfill user report data, hourly within give date (beginDate <= the time  < endDate)
      *
      * @param beginDate begin date, format: yyyyMMdd
      * @param endDate   end date, format: yyyyMMdd
@@ -152,7 +184,7 @@ public class APIController {
     }
 
     /**
-     * back fill user ad revenue data, hourly within give date (beginDate <= the time  < endDate)
+     * backfill user ad revenue data, hourly within give date (beginDate <= the time  < endDate)
      *
      * @param beginDate begin date, format: yyyyMMdd
      * @param endDate   end date, format: yyyyMMdd
@@ -167,8 +199,10 @@ public class APIController {
             public void run() {
                 try {
                     log.info("backfill user ad revenue, beginDate: {}, endDate: {}, start", beginDate, endDate);
+                    dcenterJob.syncOdsOmAdnetwork2Athena(endLoaclDate);
                     while (beginLocalDate.isBefore(endLoaclDate)) {
                         log.info("backfill user ad revenue, deal: {}", beginLocalDate);
+                        dcenterJob.syncOdsStatAdnetwork2Athena(beginLocalDate);
                         dcenterJob.userAdRevenue(beginLocalDate);
                         beginLocalDate = beginLocalDate.plusDays(1);
                     }
@@ -178,6 +212,68 @@ public class APIController {
                 }
             }
         }, "backfillUserAdRevenue").start();
+        return ResponseEntity.ok("success");
+    }
+
+    /**
+     * backfill publisher user data, hourly within give date (beginDate <= the time  < endDate)
+     * plealse
+     *
+     * @param beginDate begin date, format: yyyyMMdd
+     * @param endDate   end date, format: yyyyMMdd
+     */
+    @RequestMapping("/dc/backfill/publisher/user")
+    public ResponseEntity<?> backfillPublisherUser(String beginDate, String endDate) {
+        new Thread(new Runnable() {
+            LocalDate beginLocalDate = LocalDate.parse(beginDate, Constants.FORMATTER_YYYYMMDD);
+            final LocalDate endLoaclDate = LocalDate.parse(endDate, Constants.FORMATTER_YYYYMMDD);
+
+            @Override
+            public void run() {
+                try {
+                    log.info("backfill publisher user, beginDate: {}, endDate: {}, start", beginDate, endDate);
+                    while (beginLocalDate.isBefore(endLoaclDate)) {
+                        log.info("backfill publisher user, deal: {}", beginLocalDate);
+                        dcenterJob.collectDwsPublisherUser(beginLocalDate);
+                        beginLocalDate = beginLocalDate.plusDays(1);
+                    }
+                    log.info("backfill publisher user, beginDate: {}, endDate: {}, complete", beginDate, endDate);
+                } catch (Exception e) {
+                    log.error("backfill publisher user error", e);
+                }
+            }
+        }, "backfillPublisherUser").start();
+        return ResponseEntity.ok("success,  Note: Please delete all the partitions from the beginDate !!! ");
+    }
+
+    /**
+     * backfill ltv report, hourly within give date (beginDate <= the time  < endDate)
+     *
+     * @param beginDate begin date, format: yyyyMMdd
+     * @param endDate   end date, format: yyyyMMdd
+     */
+    @RequestMapping("/dc/backfill/ltv/report")
+    public ResponseEntity<?> backfillLtvReport(String beginDate, String endDate) {
+        new Thread(new Runnable() {
+            LocalDate beginLocalDate = LocalDate.parse(beginDate, Constants.FORMATTER_YYYYMMDD);
+            final LocalDate endLoaclDate = LocalDate.parse(endDate, Constants.FORMATTER_YYYYMMDD);
+
+            @Override
+            public void run() {
+                try {
+                    log.info("backfill ltv report, beginDate: {}, endDate: {}, start", beginDate, endDate);
+                    while (beginLocalDate.isBefore(endLoaclDate)) {
+                        log.info("backfill ltv report, deal: {}", beginLocalDate);
+                        dcenterJob.syncOdsStatAdnetwork2Athena(beginLocalDate);
+                        dcenterJob.ltvReport(beginLocalDate);
+                        beginLocalDate = beginLocalDate.plusDays(1);
+                    }
+                    log.info("backfill ltv report, beginDate: {}, endDate: {}, complete", beginDate, endDate);
+                } catch (Exception e) {
+                    log.error("backfill ltv report error", e);
+                }
+            }
+        }, "backfillLtvReport").start();
         return ResponseEntity.ok("success");
     }
 
