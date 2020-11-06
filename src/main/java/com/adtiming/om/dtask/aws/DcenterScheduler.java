@@ -33,6 +33,7 @@ public class DcenterScheduler {
             return;
         }
         LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(-1);
+        dcenterJob.collectDatas(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
     }
 
@@ -46,8 +47,13 @@ public class DcenterScheduler {
         }
         LocalDate executeDate = LocalDate.now(ZoneOffset.UTC).plusDays(-1);
         dcenterJob.userReport(executeDate);
+        dcenterJob.collectDwsPublisherUser(executeDate);
+        dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
         for (int i = 0; i < 3; i++) {
-            dcenterJob.userAdRevenue(executeDate.plusDays(-i));
+            LocalDate tmpDate = executeDate.plusDays(-i);
+            dcenterJob.syncOdsStatAdnetwork2Athena(tmpDate);
+            dcenterJob.userAdRevenue(tmpDate);
+            dcenterJob.ltvReport(tmpDate);
         }
         dcenterJob.clearTmpLocalDataDirectory(executeDate.plusDays(-7));
     }

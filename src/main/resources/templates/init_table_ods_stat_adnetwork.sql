@@ -1,6 +1,7 @@
 CREATE EXTERNAL TABLE IF NOT EXISTS ods_stat_adnetwork
 (
     id                 int,
+    publisher_id       int,
     pub_app_id         int,
     platform           tinyint COMMENT '0:ios, 1:android',
     adn_id             int COMMENT 'AdNetwork ID',

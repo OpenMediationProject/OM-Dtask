@@ -4,6 +4,7 @@
 package com.adtiming.om.dtask.aws;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -19,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class S3Executor {
@@ -72,5 +75,18 @@ public class S3Executor {
         }
         LOG.info("download athena query result complete, s3 path: {}/{}, local path: {} ", awsConfig.getS3Bucket(), queryResultKeyOnS3, target);
         return target;
+    }
+
+    public void deleteObject(String bucketName, String key) {
+        try {
+            List<DeleteObjectsRequest.KeyVersion> keys = awsConfig.getAmazonS3().listObjects(bucketName, key)
+                    .getObjectSummaries().stream().map(v -> new DeleteObjectsRequest.KeyVersion(v.getKey())).collect(Collectors.toList());
+            if (keys.size() > 0) {
+                awsConfig.getAmazonS3().deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(keys).withQuiet(false));
+            }
+        } catch (AmazonS3Exception e) {
+            LOG.error("delete obj fail, bucket: {}, key: {}", bucketName, key, e);
+            throw new RuntimeException("upload obj fail", e);
+        }
     }
 }
