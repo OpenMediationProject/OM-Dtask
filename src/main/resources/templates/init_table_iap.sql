@@ -56,7 +56,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS iap (
 )
 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
 WITH
-    SERDEPROPERTIES ('serialization.format' = '1' )
+    SERDEPROPERTIES ('serialization.format' = '1', 'ignore.malformed.json' = 'true')
     LOCATION 's3://[(${s3Bucket})]/[(${tableDataPath})]/iap/'
     TBLPROPERTIES ('has_encrypted_data'='false')
 ;
