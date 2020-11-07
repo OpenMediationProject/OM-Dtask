@@ -29,7 +29,7 @@ public class DcenterTest {
 
     @Test
     public void testDaily() {
-        LocalDate executeDate = LocalDate.of(2020,11,2);
+        LocalDate executeDate = LocalDate.of(2020, 11, 2);
         dcenterJob.userReport(executeDate);
         dcenterJob.collectDwsPublisherUser(executeDate);
         dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
