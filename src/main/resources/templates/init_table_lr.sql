@@ -63,7 +63,8 @@ WITH
         'mapping.req_id' = 'reqId',
         'mapping.server_ts' = 'serverTs',
         'mapping.publisher_id' = 'publisherId',
-        'mapping.pub_app_id' = 'pubAppId' )
+        'mapping.pub_app_id' = 'pubAppId',
+        'ignore.malformed.json' = 'true')
     LOCATION 's3://[(${s3Bucket})]/[(${tableDataPath})]/lr/'
     TBLPROPERTIES ('has_encrypted_data'='false')
 ;
