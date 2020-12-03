@@ -27,7 +27,12 @@ public class DBPreparer {
     private static final String[] DAY_PARTITION_TABLES = {
             "stat_adnetwork",
             "stat_lr",
+            "stat_cp",
             "stat_dau",
+            "stat_dau_adn",
+            "stat_dau_placement",
+            "stat_dau_adn_placement",
+            "stat_dau_instance",
             "stat_user_ltv"
     };
 

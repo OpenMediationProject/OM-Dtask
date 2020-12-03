@@ -7,6 +7,7 @@ import com.adtiming.om.pb.AdNetworkPB;
 import com.adtiming.om.pb.DevPB;
 import com.adtiming.om.pb.PlacementPB;
 import com.adtiming.om.pb.PubAppPB;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -15,13 +16,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-import java.io.File;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
 
 @Component
 public class SDKCacheBuilder extends PbBuiler {
@@ -34,16 +40,13 @@ public class SDKCacheBuilder extends PbBuiler {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final File dir = new File("cache");
-
     private final String MODEL_SPLIT_STR = "#";
 
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
-        if (!cfg.getDir().exists() && cfg.getDir().mkdir())
-            log.info("mkdir {}", cfg.getDir());
-        /*if (!cfg.isProd())
-            return;*/
+        if (!cfg.isProd()) {
+            return;
+        }
         long start = System.currentTimeMillis();
         log.debug("build sdk cache start");
 

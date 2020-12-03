@@ -47,18 +47,18 @@ FROM (
                          user_behavior_data.publisher_id                                                                                                         AS publisher_id,
                          user_behavior_data.pub_app_id                                                                                                           AS pub_app_id,
                          uid,
-                         IF(coalesce(cost, 0) = 0 OR impr_total + click_total = 0, 0, ((impr + 4 * click) * coalesce(cost, 0)) / (impr_total + 4 * click_total)) AS mediation_value
+                         IF(coalesce(cost, 0) = 0 OR impr_total + click_total = 0, 0, ((impr_cur + 4 * click_cur) * coalesce(cost, 0)) / (impr_total + 4 * click_total)) AS mediation_value
                   FROM (
                            SELECT country,
-                                  publisherId                                                                          AS publisher_id,
-                                  pubAppId                                                                             AS pub_app_id,
-                                  mid                                                                                  AS adn_id,
-                                  iid                                                                                  AS instance_id,
+                                  publisherId                                                                                                         AS publisher_id,
+                                  pubAppId                                                                                                            AS pub_app_id,
+                                  mid                                                                                                                 AS adn_id,
+                                  iid                                                                                                                 AS instance_id,
                                   uid,
-                                  SUM(if(type = 6, 1, 0)) OVER (PARTITION BY country, publisherId, pubAppId, mid, iid) AS impr_total,
-                                  SUM(if(type = 7, 1, 0)) OVER (PARTITION BY country, publisherId, pubAppId, mid, iid) AS click_total,
-                                  if(type = 6, 1, 0)                                                                   AS impr,
-                                  if(type = 7, 1, 0)                                                                   AS click
+                                  SUM(if(type = 6 OR impr > 0, coalesce(impr, 1), 0)) OVER (PARTITION BY country, publisherId, pubAppId, mid, iid)    AS impr_total,
+                                  SUM(if(type = 7 OR click > 0, coalesce(click, 1), 0)) OVER (PARTITION BY country, publisherId, pubAppId, mid, iid)  AS click_total,
+                                  if(type = 6 OR impr > 0, coalesce(impr, 1), 0)                                                                      AS impr_cur,
+                                  if(type = 7 OR click > 0, coalesce(click, 1), 0)                                                                    AS click_cur
                            FROM lr
                            WHERE y = '[(${executeYear})]'
                              AND m = '[(${executeMonth})]'

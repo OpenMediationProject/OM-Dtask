@@ -41,6 +41,7 @@ public class DcenterScheduler {
         LocalDateTime executeDateTime = LocalDateTime.now().plusHours(-1);
         dcenterJob.collectDatas(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
+        dcenterJob.cpReport(executeDateTime);
     }
 
     @Scheduled(cron = "0 5 1 * * ?")
