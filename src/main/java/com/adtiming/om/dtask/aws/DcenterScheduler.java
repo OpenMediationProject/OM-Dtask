@@ -40,6 +40,7 @@ public class DcenterScheduler {
         LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(-1);
         dcenterJob.collectDatas(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
+        dcenterJob.cpReport(executeDateTime);
     }
 
     @Scheduled(cron = "0 5 1 * * ?", zone = "UTC")

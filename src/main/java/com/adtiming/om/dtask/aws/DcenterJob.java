@@ -3,13 +3,17 @@
 
 package com.adtiming.om.dtask.aws;
 
+import com.adtiming.om.dtask.dto.DauDimensionsDTO;
+import com.adtiming.om.dtask.dto.MailSender;
 import com.adtiming.om.dtask.service.DictManager;
 import com.adtiming.om.dtask.service.StmtCreator;
 import com.adtiming.om.dtask.util.Constants;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
@@ -65,6 +70,9 @@ public class DcenterJob {
     @Resource
     private DictManager dictManager;
 
+    @Resource
+    private ObjectMapper objectMapper;
+
     @PostConstruct
     private void init() {
         if (awsConfig.isDisabled()) {
@@ -84,7 +92,7 @@ public class DcenterJob {
         HashMap<String, Object> valueMap = new HashMap<>();
         valueMap.put("database", athenaDatabase);
         String initSql = this.templateEngine.process("init_database", new Context(null, valueMap));
-        LOG.debug("init database, sql:\n {}", initSql);
+        LOG.debug("init database, sql:\n{}", initSql);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, initSql, resultDirOnS3);
         athenaExecutor.waitForQueryToComplete(queryExecutionId);
         LOG.info("init database complete, id: {}, result path: {} ", queryExecutionId, resultDirOnS3);
@@ -98,7 +106,7 @@ public class DcenterJob {
         AthenaConstants.TABLE_NAMES.forEach(tableName -> {
             LOG.info("init table, name: {}", tableName);
             String initSql = this.templateEngine.process("init_table_" + tableName, new Context(null, valueMap));
-            LOG.debug("init table, sql:\n {}", initSql);
+            LOG.debug("init table, sql:\n{}", initSql);
             String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, initSql, resultDirOnS3);
             athenaExecutor.waitForQueryToComplete(queryExecutionId);
             LOG.info("init table complete, name: {}, id: {}, result path: {} ", tableName, queryExecutionId, resultDirOnS3);
@@ -109,6 +117,7 @@ public class DcenterJob {
     public void collectDatas(LocalDateTime executeDateTime) {
         collectDatas(AthenaConstants.TABLE_NAME_LR, executeDateTime);
         collectDatas(AthenaConstants.TABLE_NAME_IAP, executeDateTime);
+        collectDatas(AthenaConstants.TABLE_NAME_CPTK, executeDateTime);
     }
 
     public void collectDatas(String tableName, LocalDateTime executeDateTime) {
@@ -116,7 +125,6 @@ public class DcenterJob {
         String month = executeDateTime.format(Constants.FORMATTER_MM);
         String day = executeDateTime.format(Constants.FORMATTER_DD);
         String hour = executeDateTime.format(Constants.FORMATTER_HH);
-        addPartition(tableName, year, month, day, hour);
         addPartition(tableName, year, month, day, hour);
     }
 
@@ -132,85 +140,98 @@ public class DcenterJob {
         addPartition("add_hourly_partition", valueMap);
     }
 
-
     public void commonReport(LocalDateTime executeDateTime) {
-        String year = executeDateTime.format(Constants.FORMATTER_YYYY);
-        String month = executeDateTime.format(Constants.FORMATTER_MM);
-        String day = executeDateTime.format(Constants.FORMATTER_DD);
-        String hour = executeDateTime.format(Constants.FORMATTER_HH);
-
-        HashMap<String, Object> valueMap = new HashMap<>();
-        valueMap.put("year", year);
-        valueMap.put("month", month);
-        valueMap.put("day", day);
-        valueMap.put("hour", hour);
-        valueMap.put("tableName", AthenaConstants.TABLE_NAME_LR);
-
-        LOG.info("report common, query start...");
-        String reportSql = this.templateEngine.process("report_common", new Context(null, valueMap));
-        LOG.debug("report common, query sql:\n {}", reportSql);
-        String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
-        String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
-        athenaExecutor.waitForQueryToComplete(queryExecutionId);
-        LOG.info("report common, query complete, id: {}, result directory: {} ", queryExecutionId, resultDirOnS3);
-
-        LOG.info("report common, download start...");
-        Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
-        LOG.info("report common, download complete");
-
-        // LOAD TO MYSQL
-        LOG.info("report common, clear mysql start...");
-        String clearSql = "DELETE FROM stat_lr WHERE day='" + year + month + day + "'" + " AND hour=" + executeDateTime.getHour();
-        LOG.debug("report common, clear mysql sql:\n {}", clearSql);
-        jdbcTemplate.execute(clearSql);
-        LOG.info("report common, clear mysql, complete");
-
-        LOG.info("report common, load 2 mysql start...");
-        String sql = "LOAD DATA LOCAL INFILE '" + localPath + "' INTO TABLE stat_lr FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES " +
-                " (day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,scene_id,adn_id,abt,bid,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr,bid_req,bid_resp,bid_resp_price,bid_win,bid_win_price)";
-        LOG.debug("report common, load 2 mysql sql:\n {}", sql);
-        jdbcTemplate.execute(sql);
-        LOG.info("report common, load 2 mysql complete");
+        String mysqlTableColumns = "day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,scene_id,adn_id,abt,bid,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr,bid_req,bid_resp,bid_resp_price,bid_win,bid_win_price";
+        handleHourlyReport(executeDateTime, "common", "stat_lr", mysqlTableColumns);
     }
 
+    public void cpReport(LocalDateTime executeDateTime) {
+        String mysqlTableColumns = "day,hour,publisher_id,pub_app_id,placement_id,country,app_id,campaign_id,creative_id,impr,click,win_price";
+        handleHourlyReport(executeDateTime, "cp", "stat_cp", mysqlTableColumns);
+    }
 
     public void userReport(LocalDate executeDate) {
-        String year = executeDate.format(Constants.FORMATTER_YYYY);
-        String month = executeDate.format(Constants.FORMATTER_MM);
-        String day = executeDate.format(Constants.FORMATTER_DD);
+        handleDailyReport(executeDate, "user", "stat_dau", "day,publisher_id,pub_app_id,platform,country,ip_count,did_count,dau,deu");
 
-        HashMap<String, Object> valueMap = new HashMap<>();
-        valueMap.put("year", year);
-        valueMap.put("month", month);
-        valueMap.put("day", day);
-        valueMap.put("tableName", AthenaConstants.TABLE_NAME_LR);
+        String dauDimensionsConf = dictManager.val("/om/dau_dimensions");
+        if (StringUtils.isEmpty(dauDimensionsConf)){
+            LOG.error("There has no dau dimensions conf!");
+            return;
+        }
+        DauDimensionsDTO dauDimensionsDTO = null;
+        try {
+            dauDimensionsDTO = objectMapper.readValue(dauDimensionsConf, DauDimensionsDTO.class);
+        } catch (IOException e) {
+            LOG.error("Parse DauDimensionsDTO error:", e);
+            return;
+        }
+        if (dauDimensionsDTO == null){
+            return;
+        }
+        if (dauDimensionsDTO.getAdn() != null && dauDimensionsDTO.getAdn() == 1) {
+            handleDailyReport(executeDate, "user_adn", "stat_dau_adn", "day,publisher_id,pub_app_id,platform,country,adn_id,ip_count,did_count,dau,deu");
+        }
+        if (dauDimensionsDTO.getAdn_placement() != null && dauDimensionsDTO.getAdn_placement() == 1) {
+            handleDailyReport(executeDate, "user_adn_placement", "stat_dau_adn_placement", "day,publisher_id,pub_app_id,platform,country,placement_id,adn_id,ip_count,did_count,dau,deu");
+        }
+        if (dauDimensionsDTO.getPlacement() != null && dauDimensionsDTO.getPlacement() == 1) {
+            handleDailyReport(executeDate, "user_placement", "stat_dau_placement", "day,publisher_id,pub_app_id,platform,country,placement_id,ip_count,did_count,dau,deu");
+        }
+        if (dauDimensionsDTO.getInstance() != null && dauDimensionsDTO.getInstance() == 1) {
+            handleDailyReport(executeDate, "user_instance", "stat_dau_instance", "day,publisher_id,pub_app_id,platform,country,placement_id,instance_id,adn_id,ip_count,did_count,dau,deu");
+        }
+    }
 
-        LOG.info("report user, query start...");
-        String reportSql = this.templateEngine.process("report_user", new Context(null, valueMap));
-        LOG.debug("report user, query sql:\n {}", reportSql);
-        String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
-        String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
-        athenaExecutor.waitForQueryToComplete(queryExecutionId);
-        LOG.info("report user, query complete, id: {}, result directory: {} ", queryExecutionId, resultDirOnS3);
+    private void handleHourlyReport(LocalDateTime executeDateTime, String reportName, String mysqlTableName, String mysqlTableColumns) {
+        handleReport(true, executeDateTime, reportName, mysqlTableName, mysqlTableColumns);
+    }
 
-        LOG.info("report user, download start...");
-        Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
-        LOG.info("report user, download complete");
+    private void handleDailyReport(LocalDate executeDate, String reportName, String mysqlTableName, String mysqlTableColumns) {
+        handleReport(false, LocalDateTime.of(executeDate, LocalTime.of(0, 0)), reportName, mysqlTableName, mysqlTableColumns);
+    }
 
-        // LOAD TO MYSQL
-        LOG.info("report user, clear, clear mysql start...");
-        String clearSql = "DELETE FROM stat_dau WHERE day='" + year + month + day + "'";
-        LOG.debug("report user, clear mysql sql:\n {}", clearSql);
-        jdbcTemplate.execute(clearSql);
-        LOG.info("report user, clear mysql, complete");
+    private void handleReport(boolean isHourly, LocalDateTime executeDateTime, String reportName, String mysqlTableName, String mysqlTableColumns) {
+        try {
+            String year = executeDateTime.format(Constants.FORMATTER_YYYY);
+            String month = executeDateTime.format(Constants.FORMATTER_MM);
+            String day = executeDateTime.format(Constants.FORMATTER_DD);
+            String hour = executeDateTime.format(Constants.FORMATTER_HH);
+            HashMap<String, Object> valueMap = new HashMap<>();
+            valueMap.put("year", year);
+            valueMap.put("month", month);
+            valueMap.put("day", day);
+            valueMap.put("hour", hour);
 
-        LOG.info("report user, load 2 mysql start...");
-        String sql = "LOAD DATA LOCAL INFILE '" + localPath +
-                "' INTO TABLE stat_dau FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES " +
-                " (day,publisher_id,pub_app_id,platform,country,ip_count,did_count,dau,deu)";
-        LOG.debug("report user, load 2 mysql sql:\n {}", sql);
-        jdbcTemplate.execute(sql);
-        LOG.info("report user, load 2 mysql complete");
+            LOG.info("report {}, query start...", reportName);
+            String reportSql = this.templateEngine.process("report_" + reportName, new Context(null, valueMap));
+            LOG.debug("report {}, query sql:\n{}", reportName, reportSql);
+            String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
+            String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
+            athenaExecutor.waitForQueryToComplete(queryExecutionId);
+            LOG.info("report {}, query complete, id: {}, result directory: {} ", reportName, queryExecutionId, resultDirOnS3);
+
+            LOG.info("report {}, download start...", reportName);
+            Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
+            LOG.info("report {}, download complete", reportName);
+
+            // LOAD TO MYSQL
+            LOG.info("report {}, clear mysql start...", reportName);
+            String clearSql = "DELETE FROM " + mysqlTableName + " WHERE day='" + year + month + day + "'";
+            if (isHourly) {
+                clearSql += " AND hour=" + executeDateTime.getHour();
+            }
+            LOG.debug("report {}, clear mysql sql:\n{}", reportName, clearSql);
+            jdbcTemplate.execute(clearSql);
+            LOG.info("report {}, clear mysql, complete", reportName);
+
+            LOG.info("report {}, load 2 mysql start...", reportName);
+            String sql = "LOAD DATA LOCAL INFILE '" + localPath + "' INTO TABLE " + mysqlTableName + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES " + " (" + mysqlTableColumns + ")";
+            LOG.debug("report {}, load 2 mysql sql:\n{}", reportName, sql);
+            jdbcTemplate.execute(sql);
+            LOG.info("report {}, load 2 mysql complete", reportName);
+        } catch (Exception e){
+            LOG.error("Do report failed! Name {} mysql table name {}", reportName, mysqlTableName, e);
+        }
     }
 
     public void clearTmpLocalDataDirectory(LocalDate executeDate) {
@@ -348,7 +369,7 @@ public class DcenterJob {
         valueMap.put("day", day);
         LOG.info("uar, query start...");
         String uarSql = this.templateEngine.process("user_ad_revenue", new Context(null, valueMap));
-        LOG.debug("uar, query sql:\n {}", uarSql);
+        LOG.debug("uar, query sql:\n{}", uarSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, uarSql, resultDirOnS3);
         athenaExecutor.waitForQueryToComplete(queryExecutionId);
@@ -436,7 +457,7 @@ public class DcenterJob {
         String hour = (String) valueMap.get("hour");
         LOG.info("add partition start..., table: {}, year: {}, month: {}, day: {}, hour: {}", tableName, year, month, day, hour);
         String partitionSql = this.templateEngine.process(templateName, new Context(null, valueMap));
-        LOG.debug("add partition sql:\n {}", partitionSql);
+        LOG.debug("add partition sql:\n{}", partitionSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, partitionSql, resultDirOnS3);
         athenaExecutor.waitForQueryToComplete(queryExecutionId);
@@ -484,7 +505,7 @@ public class DcenterJob {
 
         LOG.info("collect dws publisher user, query start...");
         String reportSql = this.templateEngine.process("collect_dws_publisher_user", new Context(null, valueMap));
-        LOG.debug("collect dws publisher user, query sql:\n {}", reportSql);
+        LOG.debug("collect dws publisher user, query sql:\n{}", reportSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(executeDate.format(Constants.FORMATTER_YYYY), executeDate.format(Constants.FORMATTER_MM), executeDate.format(Constants.FORMATTER_DD));
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
         athenaExecutor.waitForQueryToComplete(queryExecutionId);
@@ -509,7 +530,7 @@ public class DcenterJob {
 
         LOG.info("ltv report, query start...");
         String reportSql = this.templateEngine.process("report_ltv", new Context(null, valueMap));
-        LOG.debug("ltv report, query sql:\n {}", reportSql);
+        LOG.debug("ltv report, query sql:\n{}", reportSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
         athenaExecutor.waitForQueryToComplete(queryExecutionId);
@@ -522,7 +543,7 @@ public class DcenterJob {
         // LOAD TO MYSQL
         LOG.info("ltv report, clear, clear mysql start...");
         String clearSql = "DELETE FROM stat_user_ltv WHERE day='" + year + month + day + "'";
-        LOG.debug("ltv report, clear mysql sql:\n {}", clearSql);
+        LOG.debug("ltv report, clear mysql sql:\n{}", clearSql);
         jdbcTemplate.execute(clearSql);
         LOG.info("ltv report, clear mysql, complete");
 
@@ -530,7 +551,7 @@ public class DcenterJob {
         String sql = "LOAD DATA LOCAL INFILE '" + localPath +
                 "' INTO TABLE stat_user_ltv FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES " +
                 " (day,base_date,retention_day,country,publisher_id,pub_app_id,user_cnt_new,user_cnt_old,retention_cnt_new,retention_cnt_old,mediation_value_new,mediation_value_old,iap_value_new,iap_value_old,total_value_new,total_value_old)";
-        LOG.debug("ltv report, load 2 mysql sql:\n {}", sql);
+        LOG.debug("ltv report, load 2 mysql sql:\n{}", sql);
         jdbcTemplate.execute(sql);
         LOG.info("ltv report, load 2 mysql complete");
     }

@@ -153,6 +153,37 @@ public class APIController {
         return ResponseEntity.ok("success");
     }
 
+
+    /**
+     * backfill cp report data, hourly within give time (beginDateHour <= the time  < endDateHour)
+     *
+     * @param beginDateHour begin date and hour, format: yyyyMMddHH
+     * @param endDateHour   end date and hour , format: yyyyMMddHH
+     */
+    @RequestMapping("/dc/backfill/cp/report")
+    public ResponseEntity<?> backfillCpReport(String beginDateHour, String endDateHour) {
+        new Thread(new Runnable() {
+            LocalDateTime beginDateTime = LocalDateTime.parse(beginDateHour, Constants.FORMATTER_YYYYMMDDHH);
+            final LocalDateTime endDateTime = LocalDateTime.parse(endDateHour, Constants.FORMATTER_YYYYMMDDHH);
+
+            @Override
+            public void run() {
+                try {
+                    log.info("backfill cp report, beginDateHour: {}, endDateHour: {}, start", beginDateHour, endDateHour);
+                    while (beginDateTime.isBefore(endDateTime)) {
+                        log.info("backfill cp report, deal: {}", beginDateTime);
+                        dcenterJob.cpReport(beginDateTime);
+                        beginDateTime = beginDateTime.plusHours(1);
+                    }
+                    log.info("backfill cp report, beginDateHour: {}, endDateHour: {}, complete", beginDateHour, endDateHour);
+                } catch (Exception e) {
+                    log.error("backfill cp report error", e);
+                }
+            }
+        }, "backfillCpReport").start();
+        return ResponseEntity.ok("success");
+    }
+
     /**
      * backfill user report data, hourly within give date (beginDate <= the time  < endDate)
      *

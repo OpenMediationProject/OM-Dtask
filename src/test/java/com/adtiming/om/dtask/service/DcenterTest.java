@@ -22,14 +22,15 @@ public class DcenterTest {
 
     @Test
     public void testHourly() {
-        LocalDateTime executeDateTime = LocalDateTime.of(2020, 11, 2, 11, 0);
+        LocalDateTime executeDateTime = LocalDateTime.of(2020, 12, 2, 2, 0);
         dcenterJob.collectDatas(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
+//        dcenterJob.cpReport(executeDateTime);
     }
 
     @Test
     public void testDaily() {
-        LocalDate executeDate = LocalDate.of(2020, 11, 2);
+        LocalDate executeDate = LocalDate.of(2020, 12, 1);
         dcenterJob.userReport(executeDate);
         dcenterJob.collectDwsPublisherUser(executeDate);
         dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
