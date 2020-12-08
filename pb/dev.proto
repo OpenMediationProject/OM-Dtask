@@ -1,8 +1,4 @@
 //standard data types: bool, int32, int64, float, double, and string.
-
-//版本历史
-//2017-09-26 第一版
-
 syntax = "proto3";
 
 option java_package = "com.adtiming.om.pb";

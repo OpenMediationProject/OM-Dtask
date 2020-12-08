@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+option java_package = "com.adtiming.om.pb";
+option java_outer_classname = "CrossPromotionPB";
+
+// 活动基本信息
+message CpCampaign {
+    int64 id = 1;
+    int32 ska_campaign_id = 2; // iOS14专用SkAdNetwork Campaign ID
+    int32 publisher_id = 3;
+    int32 type = 4; // 活动投放类型, 0:House Ads,1:Direct Sold
+    string name = 5;
+    string app_id = 6;
+    string app_name = 7; //
+    string preview_url = 8; // previewUrl, 上架App填 storeUrl
+    int32 platform = 9; // 0:iOS,1:Android
+    int32 billing_type = 10; // 计费方式,0:CPI,1:CPA,2:CPC,3:CPM
+    float price = 11; // 活动单价
+    int32 daily_cap = 12;
+    float daily_budget = 13;
+    float max_bidprice = 14;
+    float bidprice = 15; // Bid Price
+    map<string, float> country_bidprice = 16; // Country BidPrice
+    int32 impr_cap = 17; // SDK展现每日上限, 0:不限制
+    int32 impr_freq = 18; // SDK展现频次(单did24小时展现次数)
+    string ad_domain = 19; // 广告主域名
+    string click_url = 20; // URI to open as destination page when user clicks on the ad 原 landing_page
+    repeated string click_tk_urls = 21; // URIs to request for tracking purposes when user clicks on the ad, ClickTracking, 行分割多条
+    repeated string impr_tk_urls = 22; // URIs to track impression, 行分割多条
+
+}
+
+// 活动定向配置信息
+message CpCampaignTargeting {
+    int64 campaign_id = 1;
+
+    int32 contype = 2; // 连接类型,二进制,从右到左(低位起) wifi,2G,3G,4G
+
+    repeated string mccmnc_white = 3; // sdk运营商Mccmnc白名单
+    repeated string mccmnc_black = 4; // sdk运营商Mccmnc黑名单
+
+    repeated string country_white = 5;
+    repeated string country_black = 6;
+
+    repeated int32 pubapp_white = 7;
+    repeated int32 pubapp_black = 8;
+
+    repeated int32 placement_white = 9;
+    repeated int32 placement_black = 10;
+
+    repeated int32 devicetype_white = 11;
+    repeated int32 devicetype_black = 12;
+
+    repeated string make_white = 13;
+    repeated string make_black = 14;
+
+    repeated string brand_white = 15;
+    repeated string brand_black = 16;
+
+    repeated string model_white = 17;
+    repeated string model_black = 18;
+
+    repeated string osv_white = 19;
+    repeated Range osv_white_range = 20;
+    repeated string osv_black = 21;
+    repeated Range osv_black_range = 22;
+}
+
+// 区间, *_type 为 true 表式开区间, false 表示闭区间
+message Range {
+    string min = 1;
+    string max = 2;
+    bool min_type = 3; // true: open, false: close
+    bool max_type = 4; // true: open, false: close
+}
+
+// 创意
+message CpCreative {
+    int64 id = 1;
+    int64 campaign_id = 2;
+    string name = 3;
+    Type type = 4;
+    string title = 5;
+    string descn = 6;
+    repeated int64 material_ids = 7;
+    string play_url = 8;
+    int32 weight = 9; // 权重
+    int32 template = 10; // 初始模版ID
+    int32 endcard_template = 11; // EndCard 模版ID
+
+    enum Type {
+        Banner = 0;
+        Native = 1;
+        Video = 2;
+        CrossPromotion = 3;
+    }
+}
+
+// 素材
+message CpMaterial {
+    int64 id = 1; //  素材ID
+    string url = 2; //  素材文件URL
+    int32 width = 3; //  素材宽
+    int32 height = 4; //  素材高
+    int32 size = 5; //  素材大小(字节)
+    Type type = 6; // 素材类型
+    string mime_type = 7;
+    int32 video_duration = 8; // 视频时长
+
+    enum Type {
+        Image = 0;
+        Icon = 1;
+        Video = 2;
+    }
+}
+
+// 页面模版
+message H5Template {
+    int32 id = 1;
+    string name = 2;
+    int32 type = 3;
+    string url = 4;
+    int32 width = 5;
+    int32 height = 6;
+    bool need_carousel = 7; //是否支持轮播
+}
+
+message App {
+    int32 id = 1;
+    string app_id = 2;
+    int32 plat = 3;
+    string name = 4;
+    string icon = 5;
+    float rating_value = 6;
+    int32 rating_count = 7;
+    string osv_min = 8;
+    string osv_max = 9;
+    string category = 10;
+    int32 category_id = 11;
+    int32 sub_category_id1 = 12;
+    int32 sub_category_id2 = 13;
+}
