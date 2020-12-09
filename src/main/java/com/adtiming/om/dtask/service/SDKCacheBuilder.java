@@ -16,7 +16,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.File;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,16 +33,13 @@ public class SDKCacheBuilder extends PbBuiler {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final File dir = new File("cache");
-
-    private final String MODEL_SPLIT_STR = "#";
+    private final String MODEL_SPLIT_STR = "\n";
 
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
-        if (!cfg.getDir().exists() && cfg.getDir().mkdir())
-            log.info("mkdir {}", cfg.getDir());
-        /*if (!cfg.isProd())
-            return;*/
+        if (!cfg.isProd()) {
+            return;
+        }
         long start = System.currentTimeMillis();
         log.debug("build sdk cache start");
 

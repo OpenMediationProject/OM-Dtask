@@ -4,17 +4,20 @@
 package com.adtiming.om.dtask.aws;
 
 import com.adtiming.om.dtask.service.AppConfig;
+import com.adtiming.om.dtask.service.DictManager;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import javax.annotation.Resource;
 
 @Component
 public class DcenterScheduler {
+    private static final int SWITCH_ON = 1;
 
     @Resource
     private AppConfig cfg;
@@ -25,7 +28,10 @@ public class DcenterScheduler {
     @Resource
     private DcenterJob dcenterJob;
 
-    @Scheduled(cron = "0 17 * * * ?")
+    @Resource
+    private DictManager dictManager;
+
+    @Scheduled(cron = "0 17 * * * ?", zone = "UTC")
     public void hourly() {
         if (!cfg.isProd()) {
             return;
@@ -33,11 +39,13 @@ public class DcenterScheduler {
         if (awsConfig.isDisabled()) {
             return;
         }
-        LocalDateTime executeDateTime = LocalDateTime.now().plusHours(-1);
+        LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(-1);
+        dcenterJob.collectDatas(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
+        dcenterJob.cpReport(executeDateTime);
     }
 
-    @Scheduled(cron = "0 5 1 * * ?")
+    @Scheduled(cron = "0 5 1 * * ?", zone = "UTC")
     public void daily() {
         if (!cfg.isProd()) {
             return;
@@ -45,11 +53,26 @@ public class DcenterScheduler {
         if (awsConfig.isDisabled()) {
             return;
         }
-        LocalDate executeDate = LocalDate.now().plusDays(-1);
+        LocalDate executeDate = LocalDate.now(ZoneOffset.UTC).plusDays(-1);
         dcenterJob.userReport(executeDate);
+        dcenterJob.collectDwsPublisherUser(executeDate);
+        dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
         for (int i = 0; i < 3; i++) {
-            dcenterJob.userAdRevenue(executeDate.plusDays(-i));
+            LocalDate tmpDate = executeDate.plusDays(-i);
+            dcenterJob.syncOdsStatAdnetwork2Athena(tmpDate);
+
+            if (isSwitchOn(dictManager.intVal("/om/uar_switch"))) {
+                dcenterJob.userAdRevenue(tmpDate);
+            }
+
+            if (isSwitchOn(dictManager.intVal("/om/ltv_switch"))) {
+                dcenterJob.ltvReport(tmpDate);
+            }
         }
         dcenterJob.clearTmpLocalDataDirectory(executeDate.plusDays(-7));
+    }
+
+    private static boolean isSwitchOn(int switchValue) {
+        return SWITCH_ON == switchValue;
     }
 }

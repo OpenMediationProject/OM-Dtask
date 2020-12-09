@@ -13,6 +13,8 @@ enum AdType {
     Native = 1; // 原生
     RewardVideo = 2; // 视频
     Interstitial = 3; // 插屏
+    Splash = 4; // 开屏
+    CrossPromotion = 5; // 交叉推广
 }
 
 message Country {

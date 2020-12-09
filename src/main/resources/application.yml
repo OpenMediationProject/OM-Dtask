@@ -24,14 +24,6 @@ spring:
     scheduling:
       pool:
         size: 30
-  ## freemarker
-  freemarker:
-    charset: UTF-8
-    settings:
-      dateFormat: yyyy-MM-dd
-      datetime_format: yyyy-MM-dd HH:mm:ss
-      whitespaceStripping: true
-      numberFormat: 0.##
   ## jackson
   jackson:
     parser:
@@ -39,7 +31,7 @@ spring:
       ALLOW_UNQUOTED_FIELD_NAMES: true
     deserialization:
       FAIL_ON_UNKNOWN_PROPERTIES: false
-    default-property-inclusion: non_null
+    default-property-inclusion: NON_NULL
     generator:
       AUTO_CLOSE_TARGET: false
       IGNORE_UNKNOWN: true
@@ -53,16 +45,6 @@ spring:
 
   profiles:
     active: dev
-
-management:
-  endpoint:
-    httptrace:
-      enabled: false
-  endpoints:
-    web:
-      base-path: /holy
-      exposure:
-        include: metrics,loggers,threaddump
 
 aws:
   athena:
