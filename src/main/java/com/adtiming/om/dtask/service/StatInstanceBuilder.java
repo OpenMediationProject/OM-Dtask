@@ -45,16 +45,21 @@ public class StatInstanceBuilder extends PbBuiler {
 
     @PostConstruct
     private void init() {
-        adNetworkDelay.put(1, 8);//admob
-        adNetworkDelay.put(2, 17);//facebook
-        adNetworkDelay.put(3, 20);//unity
-        adNetworkDelay.put(4, 8);//vungle
-        adNetworkDelay.put(6, 8);//adcolony
-        adNetworkDelay.put(7, 9);//applovin
-        adNetworkDelay.put(8, 47);//mopub
-        adNetworkDelay.put(10, 8);//tapjoy
-        adNetworkDelay.put(11, 20);//chartboost
-        adNetworkDelay.put(12, 40);//TikTok
+        adNetworkDelay.put(1, 8);//adtiming
+        adNetworkDelay.put(2, 11);//admob
+        adNetworkDelay.put(3, 17);//facebook
+        adNetworkDelay.put(4, 10);//unity
+        adNetworkDelay.put(5, 8);//vungle
+        adNetworkDelay.put(6, 11);//tencentAd
+        adNetworkDelay.put(7, 8);//adcolony
+        adNetworkDelay.put(8, 8);//applovin
+        adNetworkDelay.put(9, 47);//mopub
+        adNetworkDelay.put(11, 8);//tapjoy
+        adNetworkDelay.put(12, 20);//chartboost
+        adNetworkDelay.put(13, 40);//TikTok
+        adNetworkDelay.put(14, 10);//mintegral
+        adNetworkDelay.put(15, 8);//ironSource
+        adNetworkDelay.put(17, 8);//ChartboostBid
         if (!cfg.isProd())
             return;
         threadPoolTaskScheduler.getScheduledExecutor().schedule(this::buildCache, 30, TimeUnit.SECONDS);
