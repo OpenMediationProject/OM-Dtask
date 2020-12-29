@@ -22,10 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE;
 
-/**
- * Created by huangqiang on 2019/11/12.
- * SDKInstanceStatBuilder
- */
 @Service
 public class StatInstanceBuilder extends PbBuiler {
 

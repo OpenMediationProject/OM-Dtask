@@ -13,10 +13,6 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.List;
 
-/**
- * Created by huangqiang on 2019/1/24.
- * SDKDevelopService
- */
 @Service
 public class SDKDevelopService {
     private static final Logger log = LogManager.getLogger();
