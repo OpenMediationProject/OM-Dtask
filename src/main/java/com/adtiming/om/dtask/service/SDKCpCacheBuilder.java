@@ -74,7 +74,7 @@ public class SDKCpCacheBuilder extends PbBuiler {
                         " where a.status = 1" +
                         " and a.start_time <= CURRENT_TIMESTAMP" +
                         " and a.end_time >= CURRENT_TIMESTAMP" +
-                        " and (" + hourField + " is null or " + hourField + " & " + bitHour + " = " + bitHour + ")",
+                        " and (" + hourField + " is null or "  + hourField + " = 0 or " + hourField + " & " + bitHour + " = " + bitHour + ")",
 
                 // 生成临时需要导出的 creativeId
                 "insert into cp_tmp_crid (id)" +
@@ -102,7 +102,7 @@ public class SDKCpCacheBuilder extends PbBuiler {
 
             String sqlCampaign = "select a.id,a.ska_campaign_id,a.publisher_id,a.type,a.name,a.app_id,a.app_name," +
                     "a.preview_url,a.platform,a.billing_type,a.price,a.daily_cap,a.daily_budget,a.max_bidprice," +
-                    "a.bidprice,a.impr_cap,a.impr_freq,a.ad_domain,a.click_url,a.click_tk_urls,a.impr_tk_urls" +
+                    "a.bidprice,a.impr_cap,a.impr_freq,a.ad_domain,a.click_url,a.click_tk_urls,a.impr_tk_urls,a.open_type" +
                     " from cp_campaign a" +
                     " right join cp_tmp_cid tmp on tmp.id=a.id";
             jdbcTemplateW.query(sqlCampaign, rs -> {
@@ -130,6 +130,7 @@ public class SDKCpCacheBuilder extends PbBuiler {
                         .setClickUrl(rs.getString("click_url"))
                         .addAllClickTkUrls(str2list(rs.getString("click_tk_urls")))
                         .addAllImprTkUrls(str2list(rs.getString("impr_tk_urls")))
+                        .setOpenType(rs.getInt("open_type"))
                         .build());
             });
         });
