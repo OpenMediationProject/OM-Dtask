@@ -2,10 +2,10 @@ SELECT
        '[(${executeYear})][(${executeMonth})][(${executeDay})]'                                                                         AS execute_date,
        user_info_data.ymd                                                                                                               AS base_date,
        date_diff('day',
-                 from_iso8601_date('[(${executeYear})]-[(${executeMonth})]-[(${executeDay})]'),
                  from_iso8601_date(
                          CONCAT(SUBSTR(user_info_data.ymd, 1, 4), '-', SUBSTR(user_info_data.ymd, 5, 2), '-', SUBSTR(user_info_data.ymd, 7, 2))
-                     )
+                 ),
+                 from_iso8601_date('[(${executeYear})]-[(${executeMonth})]-[(${executeDay})]')
            )                                                                                                                            AS retention_day,
 
        user_info_data.country,
