@@ -88,6 +88,12 @@ do
             sed -i "s/currency.api.appkey.*/currency.api.appkey: ${!env_var}/g" ${CONFFILE}/application-loc.yml
             continue
         fi
+	
+	if [[ ${item_name} = "dbathena" ]];then
+            loginfo_note "[Configuring] ${item_name} in ${CONFFILE}/application-loc.yml"
+            sed -i "s/aws.athena.database.*/aws.athena.database: ${!env_var}/g" ${CONFFILE}/application-loc.yml
+            continue
+        fi
         updateymlConfig "$item_name" "${!env_var}" "${CONFFILE}/application-loc.yml"
     fi
 
