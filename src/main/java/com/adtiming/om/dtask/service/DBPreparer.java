@@ -44,6 +44,7 @@ public class DBPreparer {
             "report_facebook",
             "report_unity",
             "report_vungle",
+            "report_tencent",
             "report_adcolony",
             "report_applovin",
             "report_mopub",
