@@ -3,9 +3,16 @@
 
 package com.adtiming.om.dtask.aws;
 
-import com.amazonaws.services.athena.model.*;
+import com.amazonaws.services.athena.model.GetQueryExecutionRequest;
+import com.amazonaws.services.athena.model.GetQueryExecutionResult;
+import com.amazonaws.services.athena.model.QueryExecutionContext;
+import com.amazonaws.services.athena.model.QueryExecutionState;
+import com.amazonaws.services.athena.model.ResultConfiguration;
+import com.amazonaws.services.athena.model.StartQueryExecutionRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -15,6 +22,9 @@ public class AthenaExecutor {
 
     private static final Logger LOG = LogManager.getLogger();
 
+    @Value("${aws.athena.workgroup}")
+    private String athenaWorkGroup;
+
     @Resource
     private AwsConfig awsConfig;
 
@@ -23,6 +33,9 @@ public class AthenaExecutor {
                 .withQueryString(sql)
                 .withQueryExecutionContext(new QueryExecutionContext().withDatabase(databases))
                 .withResultConfiguration(new ResultConfiguration().withOutputLocation(outPutDirectory));
+        if(StringUtils.isNotEmpty(athenaWorkGroup)){
+            startQueryExecutionRequest.withWorkGroup(athenaWorkGroup);
+        }
         return awsConfig.getAmazonAthena().startQueryExecution(startQueryExecutionRequest).getQueryExecutionId();
     }
 

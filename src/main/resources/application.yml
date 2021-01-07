@@ -50,3 +50,5 @@ aws:
   athena:
     database: open_mediation
     data-dir: data/aws
+    workgroup:
+
