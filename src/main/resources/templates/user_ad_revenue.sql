@@ -32,7 +32,7 @@ FROM
                         SUM(SUM(if(type = 7 OR click > 0, coalesce(click, 1), 0))) OVER (PARTITION BY coalesce(pubAppId, 0), coalesce(plat, -1), coalesce(mid, 0), country, coalesce(iid, 0))    AS click_total
                  FROM lr
                  WHERE
-                    ts IS NOT NULL
+                    serverTs IS NOT NULL
                     AND y='[(${year})]'
                     AND m='[(${month})]'
                     AND d='[(${day})]'

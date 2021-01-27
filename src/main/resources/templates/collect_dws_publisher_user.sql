@@ -3,14 +3,14 @@ SELECT statistical_user.publisher_id,
        statistical_user.pub_app_id,
        statistical_user.country,
        statistical_user.uid,
-       IF(all_user.uid IS NULL, 1, 0) AS is_new,
+       IF(all_user.uid IS NULL, 1, 0)               AS is_new,
        '[(${year})][(${month})][(${day})]'          AS ymd
 FROM (SELECT publisherId       AS publisher_Id,
              pubAppId          AS pub_app_id,
              country,
              coalesce(uid, '') AS uid
       FROM lr
-      WHERE ts IS NOT NULL
+      WHERE serverTs IS NOT NULL
         AND y='[(${year})]'
         AND m='[(${month})]'
         AND d='[(${day})]'
