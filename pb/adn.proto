@@ -11,6 +11,7 @@ message AdNetwork {
     int32 type = 4; // 二进制,0:Banner,1:Native,2:Video,3:Interstitial;
     string sdk_version = 5;
     string bid_endpoint = 6; // S2S BidEndpointURL
+    string descn = 7; // Description
 }
 
 message AdNetworkApp {
@@ -58,6 +59,8 @@ message Instance {
 
     map<string, CountrySettings> country_settings = 20;
 
+    string name = 21;
+
     message CountrySettings {
         map<int32, int32> period = 1;
     }
@@ -96,6 +99,27 @@ message InstanceRule {
     // 2020-07-06
     int32 age_min = 24;
     int32 age_max = 25;
+    // 2021-03-04
+    string name = 26;
+    repeated string osv_white = 27;
+    repeated Range osv_range = 28;
+    repeated string sdkv_white = 29;
+    repeated Range sdkv_range = 30;
+    repeated string appv_white = 31;
+    repeated Range appv_range = 32;
+    int32 require_did = 33; //需要非空deviceId, 0:No,1:Yes
+    map<string, CustomTag> custom_tags = 34;
+}
 
+message CustomTag {
+    string name = 1;
+    int32 type = 2; // 0:string, 1:int, 2:float, 3:version
+    repeated TagCondition conditions = 3;
+}
+
+message TagCondition {
+    string operator = 1; // >|>=|<|<=|=|!=|in|notin
+    string value = 2;
+    repeated string values = 3; // in|notin时多值使用
 }
 

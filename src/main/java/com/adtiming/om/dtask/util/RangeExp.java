@@ -1,7 +1,5 @@
 package com.adtiming.om.dtask.util;
-
-import com.adtiming.om.pb.CrossPromotionPB;
-import com.adtiming.om.pb.CrossPromotionPB.Range;
+import com.adtiming.om.pb.CommonPB;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -29,7 +27,7 @@ public class RangeExp {
 
     private final String exp;
     private List<String> items;
-    private List<Range> ranges;
+    private List<CommonPB.Range> ranges;
 
     public RangeExp(String exp) {
         this.exp = exp;
@@ -47,7 +45,7 @@ public class RangeExp {
                 if (ranges == null) {
                     ranges = new ArrayList<>();
                 }
-                Range.Builder r = Range.newBuilder();
+                CommonPB.Range.Builder r = CommonPB.Range.newBuilder();
                 r.setMinType(s.charAt(0) == '('); // OPEN
                 r.setMaxType(s.charAt(s.length() - 1) == ')');
                 s = s.substring(1, s.length() - 1);
@@ -91,7 +89,7 @@ public class RangeExp {
         return ranges != null;
     }
 
-    public List<Range> getRanges() {
+    public List<CommonPB.Range> getRanges() {
         return ranges;
     }
 

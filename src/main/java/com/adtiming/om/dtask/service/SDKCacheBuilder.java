@@ -3,10 +3,14 @@
 
 package com.adtiming.om.dtask.service;
 
+import com.adtiming.om.dtask.util.RangeExp;
 import com.adtiming.om.pb.AdNetworkPB;
 import com.adtiming.om.pb.DevPB;
 import com.adtiming.om.pb.PlacementPB;
 import com.adtiming.om.pb.PubAppPB;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -102,7 +106,7 @@ public class SDKCacheBuilder extends PbBuiler {
                 appSegments.computeIfAbsent(rs.getInt("pub_app_id"), k -> new ArrayList<>()).add(seg.build());
             });*/
 
-            sql = "SELECT a.id,a.publisher_id,a.plat,a.app_name,a.app_key,a.bundle_id,a.create_time,a.sdk_event_ids" +
+            sql = "SELECT a.id,a.publisher_id,a.plat,a.app_name,a.app_key,a.bundle_id,a.create_time,a.sdk_event_ids,b.impr_callback_switch" +
                     " FROM om_publisher_app a" +
                     " LEFT JOIN om_publisher b ON b.id=a.publisher_id" +
                     " WHERE a.status=1 AND b.status=1";
@@ -117,6 +121,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setAppKey(StringUtils.defaultIfEmpty(rs.getString("app_key"), ""))
                         .setBundleId(StringUtils.defaultIfEmpty(rs.getString("bundle_id"), ""))
                         .setCreateTime((int) (rs.getTimestamp("create_time").getTime() / 1000))
+                        .setImprCallbackSwitch(rs.getInt("impr_callback_switch"))
                         .addAllBlockRules(appBlocRule.getOrDefault(pubAppId, Collections.emptyList()));
                         //.addAllSegments(appSegments.getOrDefault(pubAppId, Collections.emptyList()));
                 if (StringUtils.isNoneBlank(sdkEventIds)) {
@@ -187,7 +192,7 @@ public class SDKCacheBuilder extends PbBuiler {
                     "a.frequency_cap,a.frequency_unit,a.frequency_interval," +
                     "a.osv_max,a.osv_min,a.osv_blacklist,a.osv_whitelist,a.make_blacklist,a.make_whitelist," +
                     "a.brand_blacklist,a.brand_whitelist,a.model_blacklist,a.model_whitelist," +
-                    "a.sdkv_blacklist,a.did_blacklist" +
+                    "a.sdkv_blacklist,a.did_blacklist,a.name" +
                     " FROM om_placement a" +
                     " LEFT JOIN om_publisher_app b ON b.id=a.pub_app_id" +
                     " LEFT JOIN om_publisher c ON c.id=a.publisher_id" +
@@ -223,7 +228,8 @@ public class SDKCacheBuilder extends PbBuiler {
                         .addAllModelBlacklist(str2list(rs.getString("model_blacklist"), MODEL_SPLIT_STR))
                         .addAllModelWhitelist(str2list(rs.getString("model_whitelist"), MODEL_SPLIT_STR))
                         .addAllDidBlacklist(str2list(rs.getString("did_blacklist")))
-                        .addAllSdkvBlacklist(str2list(rs.getString("sdkv_blacklist")));
+                        .addAllSdkvBlacklist(str2list(rs.getString("sdkv_blacklist")))
+                        .setName(StringUtils.defaultString(rs.getString("name"), ""));
 
                 if (rs.getInt("floor_price_switch") == 0) {
                     pb.setFloorPrice(-1F);
@@ -254,7 +260,7 @@ public class SDKCacheBuilder extends PbBuiler {
 
     void buildAdNetowrk() {
         build("om_adnetwork", cfg.dir, out -> {
-            String sql = "SELECT id,name,class_name,type,sdk_version,bid_endpoint FROM om_adnetwork WHERE status=1";
+            String sql = "SELECT id,name,class_name,type,sdk_version,bid_endpoint,descn FROM om_adnetwork WHERE status=1";
             jdbcTemplate.query(sql, rs -> {
                 AdNetworkPB.AdNetwork adn = AdNetworkPB.AdNetwork.newBuilder()
                         .setId(rs.getInt("id"))
@@ -263,6 +269,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setType(rs.getInt("type"))
                         .setSdkVersion(StringUtils.defaultIfEmpty(rs.getString("sdk_version"), ""))
                         .setBidEndpoint(StringUtils.defaultIfEmpty(rs.getString("bid_endpoint"), ""))
+                        .setDescn(StringUtils.defaultIfEmpty(rs.getString("descn"), ""))
                         .build();
                 out.writeDelimited(adn);
             });
@@ -324,7 +331,7 @@ public class SDKCacheBuilder extends PbBuiler {
 
             sql = "SELECT DISTINCT a.id,a.adn_id,a.pub_app_id,a.placement_id,a.placement_key," +
                     "a.osv_max,a.osv_min,a.make_whitelist,a.make_blacklist,a.brand_whitelist,a.brand_blacklist,a.hb_status," +
-                    "a.model_whitelist,a.model_blacklist,a.frequency_cap,a.frequency_unit,a.frequency_interval" +
+                    "a.model_whitelist,a.model_blacklist,a.frequency_cap,a.frequency_unit,a.frequency_interval,a.name" +
                     " FROM om_instance a " +
                     " LEFT JOIN om_adnetwork_app b ON b.pub_app_id=a.pub_app_id and b.adn_id=a.adn_id" +
                     " WHERE a.status=1 AND b.status=1";
@@ -349,6 +356,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setFrequencyInterval(rs.getInt("frequency_interval"))
                         //.setAbtValue(rs.getInt("ab_test_mode"))
                         .setHbStatus(rs.getInt("hb_status") == 1)
+                        .setName(StringUtils.defaultIfEmpty(rs.getString("name"), ""))
                         .putAllCountrySettings(icp.getOrDefault(instanceId, Collections.emptyMap()));
                 out.writeDelimited(instance.build());
             });
@@ -407,7 +415,8 @@ public class SDKCacheBuilder extends PbBuiler {
             String sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.placement_id,e.countries,a.ab_test," +
                     "a.auto_opt,a.sort_type,a.priority,a.status,a.create_user_id,a.create_time,a.priority," +
                     "e.frequency, e.con_type, e.brand_whitelist, e.brand_blacklist, e.model_whitelist, e.model_blacklist," +
-                    "e.gender, e.age_max, e.age_min, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type" +
+                    "e.gender, e.age_max, e.age_min, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type, " +
+                    "e.osv_exp,e.sdkv_exp,e.appv_exp,e.require_did,e.custom_tags,a.name" +
                     " FROM om_placement_rule a" +
                     " left join om_placement b on (a.placement_id=b.id)" +
                     " left join om_publisher_app c on (a.pub_app_id=c.id)" +
@@ -420,8 +429,11 @@ public class SDKCacheBuilder extends PbBuiler {
                     return;
                 }
                 int ruleId = rs.getInt("id");
+                RangeExp osvExp = new RangeExp(rs.getString("osv_exp"));
+                RangeExp sdkvExp = new RangeExp(rs.getString("sdkv_exp"));
+                RangeExp appvExp = new RangeExp(rs.getString("appv_exp"));
                 Map<Integer, Integer> instanceWeight = ruleInstanceWeight.getOrDefault(ruleId, Collections.emptyMap());
-                out.writeDelimited(AdNetworkPB.InstanceRule.newBuilder()
+                AdNetworkPB.InstanceRule.Builder sb = AdNetworkPB.InstanceRule.newBuilder()
                         .setId(ruleId)
                         .setPublisherId(rs.getInt("publisher_id"))
                         .setPubAppId(rs.getInt("pub_app_id"))
@@ -447,7 +459,61 @@ public class SDKCacheBuilder extends PbBuiler {
                         .addAllInterest(str2list(rs.getString("interest"), MODEL_SPLIT_STR))
                         .addAllChannel(str2list(rs.getString("channel"), MODEL_SPLIT_STR))
                         .setChannelBow(rs.getInt("channel_bow") == 1)
-                        .build());
+                        .setRequireDid(rs.getInt("require_did"))
+                        .setName(StringUtils.defaultString(rs.getString("name")));
+                if (osvExp.hasRange()) {
+                    sb.addAllOsvRange(osvExp.getRanges());
+                }
+                if (osvExp.hasItems()) {
+                    sb.addAllOsvWhite(osvExp.getItems());
+                }
+                if (sdkvExp.hasRange()) {
+                    sb.addAllSdkvRange(sdkvExp.getRanges());
+                }
+                if (sdkvExp.hasItems()) {
+                    sb.addAllSdkvWhite(sdkvExp.getItems());
+                }
+                if (appvExp.hasRange()) {
+                    sb.addAllAppvRange(appvExp.getRanges());
+                }
+                if (appvExp.hasItems()) {
+                    sb.addAllAppvWhite(appvExp.getItems());
+                }
+                String ctg = rs.getString("custom_tags");
+                if (StringUtils.isNoneBlank(ctg)) {
+                    try {
+                        JSONObject cTags = JSON.parseObject(ctg);
+                        for (String name : cTags.keySet()) {
+                            AdNetworkPB.CustomTag.Builder customTag = AdNetworkPB.CustomTag.newBuilder();
+                            JSONObject cons = cTags.getJSONObject(name);
+                            int type = cons.getInteger("type");
+                            customTag.setName(name);
+                            customTag.setType(type);
+                            JSONArray arr = cons.getJSONArray("conditions");
+                            if (arr != null && arr.size() > 0) {
+                                for (int i = 0; i < arr.size(); i++) {
+                                    AdNetworkPB.TagCondition.Builder tcb = AdNetworkPB.TagCondition.newBuilder();
+                                    JSONObject con = arr.getJSONObject(i);
+                                    String op = con.getString("operator");
+                                    String value = con.getString("value");
+                                    if (StringUtils.isBlank(value)) continue;
+                                    tcb.setOperator(op);
+                                    if ("in".equals(op) || "notin".equals(op)) {
+                                        List<String> vals = Arrays.stream(value.split(",")).collect(Collectors.toList());
+                                        tcb.addAllValues(vals);
+                                    } else {
+                                        tcb.setValue(value);
+                                    }
+                                    customTag.addConditions(tcb);
+                                }
+                                sb.putCustomTags(name, customTag.build());
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("custom tag parse error, rule:{}, customTag:{}", sb.getId(), ctg, e);
+                    }
+                }
+                out.writeDelimited(sb.build());
             });
         });
     }

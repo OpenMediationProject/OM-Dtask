@@ -14,6 +14,7 @@ message PublisherApp {
     int32 create_time = 8; // 创建时间,单位秒
     repeated int32 event_ids = 9;
     repeated PublisherAppBlockRule block_rules = 10;
+    int32 impr_callback_switch = 11; // Impression callback switch, defualt off
     //repeated Segment segments = 11;
 }
 

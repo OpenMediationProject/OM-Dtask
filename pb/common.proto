@@ -42,3 +42,11 @@ enum ABTest {
     A = 1;
     B = 2;
 }
+
+// 区间, *_type 为 true 表式开区间, false 表示闭区间
+message Range {
+    string min = 1;
+    string max = 2;
+    bool min_type = 3; // true: open, false: close
+    bool max_type = 4; // true: open, false: close
+}

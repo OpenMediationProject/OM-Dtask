@@ -3,6 +3,9 @@ SELECT date_format(from_unixtime(serverTs / 1000, 'UTC'), '%Y-%m-%d') AS day,
        coalesce(pubAppId, 0)                                          AS pub_app_id,
        coalesce(plat, -1)                                             AS platform,
        country,
+       appv                                                           AS app_version,
+       sdkv                                                           AS sdk_version,
+       osv                                                            AS os_version,
 
        count(DISTINCT ip)                                             AS ip_count,
        count(DISTINCT did)                                            AS did_count,
@@ -19,5 +22,8 @@ GROUP BY
     coalesce(publisherId, 0),
     coalesce(pubAppId, 0),
     country,
-    coalesce(plat, -1)
+    coalesce(plat, -1),
+    appv,
+    sdkv,
+    osv
 ;

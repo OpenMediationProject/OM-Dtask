@@ -48,6 +48,7 @@ message Placement {
     repeated string sdkv_blacklist = 42;
 
     map<string, CountrySettings> country_settings = 43;
+    string name = 44;
 
     message CountrySettings {
         map<int32, int32> period = 1;

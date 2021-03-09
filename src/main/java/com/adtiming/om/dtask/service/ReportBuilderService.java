@@ -40,6 +40,11 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Report builder on time service
+ *
+ * @author dianbo ruan
+ */
 @Service
 public class ReportBuilderService {
 

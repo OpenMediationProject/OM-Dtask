@@ -3,6 +3,8 @@ syntax = "proto3";
 option java_package = "com.adtiming.om.pb";
 option java_outer_classname = "CrossPromotionPB";
 
+import "common.proto";
+
 // 活动基本信息
 message CpCampaign {
     int64 id = 1;
@@ -27,7 +29,7 @@ message CpCampaign {
     string click_url = 20; // URI to open as destination page when user clicks on the ad 原 landing_page
     repeated string click_tk_urls = 21; // URIs to request for tracking purposes when user clicks on the ad, ClickTracking, 行分割多条
     repeated string impr_tk_urls = 22; // URIs to track impression, 行分割多条
-
+    int32 open_type = 23; // app open type,0:Store,1:Webview,2:System Brower
 }
 
 // 活动定向配置信息
@@ -64,14 +66,6 @@ message CpCampaignTargeting {
     repeated Range osv_white_range = 20;
     repeated string osv_black = 21;
     repeated Range osv_black_range = 22;
-}
-
-// 区间, *_type 为 true 表式开区间, false 表示闭区间
-message Range {
-    string min = 1;
-    string max = 2;
-    bool min_type = 3; // true: open, false: close
-    bool max_type = 4; // true: open, false: close
 }
 
 // 创意

@@ -5,6 +5,9 @@ SELECT date_format(from_unixtime(serverTs / 1000, 'UTC'), '%Y-%m-%d') AS day,
        country,
        coalesce(pid, 0)                                               AS placement_id,
        coalesce(mid, 0)                                               AS adn_id,
+       appv                                                           AS app_version,
+       sdkv                                                           AS sdk_version,
+       osv                                                            AS os_version,
 
        count(DISTINCT ip)                                             AS ip_count,
        count(DISTINCT did)                                            AS did_count,
@@ -21,5 +24,8 @@ GROUP BY date_format(from_unixtime(serverTs / 1000, 'UTC'), '%Y-%m-%d'),
          coalesce(plat, -1),
          country,
          coalesce(pid, 0),
-         coalesce(mid, 0)
+         coalesce(mid, 0),
+         appv,
+         sdkv,
+         osv
 ;

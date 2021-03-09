@@ -10,6 +10,10 @@ SELECT date_format(from_unixtime(serverTs / 1000, 'UTC'), '%Y-%m-%d')           
        coalesce(mid, 0)                                                                     AS adn_id,
        coalesce(abt, 0)                                                                     AS abt,
        coalesce(bid, 0)                                                                     AS bid,
+       appv                                                                                 AS app_version,
+       sdkv                                                                                 AS sdk_version,
+       osv                                                                                  AS os_version,
+
        sum(if(type = 2 OR wfReq > 0, coalesce(wfReq, 1), 0))                                AS waterfall_request,
        sum(if(type = 3 OR wfFil > 0, coalesce(wfFil, 1), 0))                                AS waterfall_filled,
        sum(if(type = 4 OR insReq > 0, coalesce(insReq, 1), 0))                              AS instance_request,
@@ -43,5 +47,8 @@ GROUP BY date_format(from_unixtime(serverTs / 1000, 'UTC'), '%Y-%m-%d'),
          coalesce(scene, 0),
          coalesce(mid, 0),
          coalesce(abt, 0),
-         coalesce(bid, 0)
+         coalesce(bid, 0),
+         appv,
+         sdkv,
+         osv
 ;
