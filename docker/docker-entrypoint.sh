@@ -136,6 +136,14 @@ do
             ln -sf ${!env_var}/ /${CONFFILE}/log
             continue
         fi 
+	if [[ ${item_name} = "mountcache" ]]; then
+            loginfo_note "[Cloud Storage] Link ${!env_var}/ to /${CONFFILE}/cache"
+            if [[ -d /${CONFFILE}/cache ]];then
+                rm -fr /${CONFFILE}/cache
+            fi
+            ln -sf ${!env_var}/ /${CONFFILE}/cache
+            continue
+        fi
     fi
 
     if [[ $env_var =~ ^OMCONF_ ]]; then
