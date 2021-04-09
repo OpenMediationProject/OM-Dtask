@@ -18,3 +18,4 @@ spring:
 # currency api key from https://fixer.io
 currency.api.appkey: your app key
 aws.athena.database: open_mediation
+aws.athena.workgroup: 
