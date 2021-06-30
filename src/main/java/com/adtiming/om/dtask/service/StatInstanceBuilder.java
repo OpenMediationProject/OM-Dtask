@@ -45,21 +45,26 @@ public class StatInstanceBuilder extends PbBuiler {
 
     @PostConstruct
     private void init() {
-        adNetworkDelay.put(1, 8);//adtiming
-        adNetworkDelay.put(2, 11);//admob
-        adNetworkDelay.put(3, 17);//facebook
-        adNetworkDelay.put(4, 10);//unity
-        adNetworkDelay.put(5, 8);//vungle
+        adNetworkDelay.put(1, 1);//adtiming
+        adNetworkDelay.put(2, 3);//admob
+        adNetworkDelay.put(3, 9);//facebook
+        adNetworkDelay.put(4, 2);//unity
+        adNetworkDelay.put(5, 1);//vungle
         adNetworkDelay.put(6, 11);//tencentAd
-        adNetworkDelay.put(7, 8);//adcolony
-        adNetworkDelay.put(8, 8);//applovin
+        adNetworkDelay.put(7, 1);//adcolony
+        adNetworkDelay.put(8, 1);//applovin
         adNetworkDelay.put(9, 47);//mopub
-        adNetworkDelay.put(11, 8);//tapjoy
-        adNetworkDelay.put(12, 20);//chartboost
-        adNetworkDelay.put(13, 40);//TikTok
-        adNetworkDelay.put(14, 10);//mintegral
-        adNetworkDelay.put(15, 8);//ironSource
-        adNetworkDelay.put(17, 8);//ChartboostBid
+        adNetworkDelay.put(11, 1);//tapjoy
+        adNetworkDelay.put(12, 9);//chartboost
+        adNetworkDelay.put(13, 16);//TikTok
+        adNetworkDelay.put(14, 2);//mintegral
+        adNetworkDelay.put(15, 1);//ironSource
+        adNetworkDelay.put(17, 12);//ChartboostBid
+        adNetworkDelay.put(18, 10);//Mint
+        adNetworkDelay.put(19, 1);//CrossPromotion
+        adNetworkDelay.put(20, 14);//SigMob
+        adNetworkDelay.put(21, 10);//KuaiShou
+        adNetworkDelay.put(23, 10);//KuaiShou
         if (!cfg.isProd())
             return;
         threadPoolTaskScheduler.getScheduledExecutor().schedule(this::buildCache, 30, TimeUnit.SECONDS);
