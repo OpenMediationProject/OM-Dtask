@@ -5,10 +5,9 @@ logging:
   config: classpath:log4j2-prod.xml
 
 spring:
-  ## datasource
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://host/open_mediation?useCursorFetch=true&characterEncoding=utf8&useSSL=true&requireSSL=false&allowLoadLocalInfile=true&serverTimezone=GMT
+    url: jdbc:mysql://host/open_mediation?useCursorFetch=true&characterEncoding=utf8&useSSL=true&requireSSL=false&allowLoadLocalInfile=true
     username: user
     password: pwd
   jdbc:
@@ -17,5 +16,3 @@ spring:
 
 # currency api key from https://fixer.io
 currency.api.appkey: your app key
-aws.athena.database: open_mediation
-aws.athena.workgroup: 

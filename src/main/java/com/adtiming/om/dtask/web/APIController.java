@@ -9,6 +9,7 @@ import com.adtiming.om.dtask.dto.ReportBuilderDTO;
 import com.adtiming.om.dtask.service.ReportBuilderService;
 import com.adtiming.om.dtask.util.Constants;
 import com.adtiming.om.dtask.util.Util;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -30,6 +31,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class APIController {
@@ -54,9 +56,9 @@ public class APIController {
     public ResponseEntity<?> getSnodeConfig(
             HttpServletRequest req,
             @RequestParam("nodeid") String nodeid,
-            @RequestParam("dcenter") int dcenter) {
+            @RequestParam("dcenter") int dcenter, @RequestParam(value = "nc", defaultValue = "1") int needCreateNode) {
         log.debug("snode/config/get, nodeid: {}, dcenter: {}", nodeid, dcenter);
-        String sql = "select id,name,kafka_status,kafka_servers," +
+        String sql = "select id,name,kafka_status,kafka_servers,redis_servers," +
                 "s3_status,s3_region,s3_bucket,s3_access_key_id,s3_secret_access_key" +
                 " from om_server_dcenter where id=?";
         JSONObject o = new JSONObject(jdbcTemplate.queryForMap(sql, dcenter));
@@ -71,23 +73,78 @@ public class APIController {
             o.remove("s3_secret_access_key");
         }
 
-        sql = "select id from om_server_node where nodeid=?";
-        List<Integer> existsId = jdbcTemplate.queryForList(sql, Integer.class, nodeid);
-        if (existsId.isEmpty()) {
-            KeyHolder keyHolder = new GeneratedKeyHolder();
-            jdbcTemplate.update(conn -> {
-                String insertSql = "insert into om_server_node (nodeid, dcenter, ip) values (?,?,?)";
-                PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
-                ps.setString(1, nodeid);
-                ps.setInt(2, dcenter);
-                ps.setString(3, Util.getClientIP(req));
-                return ps;
-            }, keyHolder);
-            o.put("id", keyHolder.getKey().intValue());
-        } else {
-            o.put("id", existsId.get(0));
+        if (needCreateNode == 1) {
+            sql = "select id from om_server_node where nodeid=?";
+            List<Integer> existsId = jdbcTemplate.queryForList(sql, Integer.class, nodeid);
+            if (existsId.isEmpty()) {
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(conn -> {
+                    String insertSql = "insert into om_server_node (nodeid, dcenter, ip) values (?,?,?)";
+                    PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+                    ps.setString(1, nodeid);
+                    ps.setInt(2, dcenter);
+                    ps.setString(3, Util.getClientIP(req));
+                    return ps;
+                }, keyHolder);
+                o.put("id", keyHolder.getKey().intValue());
+            } else {
+                o.put("id", existsId.get(0));
+            }
         }
 
+        return ResponseEntity.ok(o);
+    }
+
+    /**
+     * used for om-server init
+     *
+     * @return snode config
+     */
+    @GetMapping("/snode/config/list")
+    public ResponseEntity<?> getSnodeConfigs(
+            HttpServletRequest req,
+            @RequestParam("nodeid") String nodeid,
+            @RequestParam("dcenter") int dcenter, @RequestParam(value = "nc", defaultValue = "1") int needCreateNode) {
+        log.debug("snode/config/list, nodeid: {}", nodeid);
+        String sql = "select id dcenter,name,kafka_status,kafka_servers,redis_servers," +
+                "s3_status,s3_region,s3_bucket,s3_access_key_id,s3_secret_access_key" +
+                " from om_server_dcenter";
+        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql);
+        JSONObject o = new JSONObject();
+        if (!list.isEmpty()) {
+            for (Map<String, Object> dcMap : list) {
+                int kafkaStatus = Util.getInt(dcMap, "kafka_status");
+                if (kafkaStatus == 0) {
+                    dcMap.remove("kafka_servers");
+                }
+                int s3Status = Util.getInt(dcMap, "s3_status");
+                if (s3Status == 0) {
+                    dcMap.remove("s3_region");
+                    dcMap.remove("s3_bucket");
+                    dcMap.remove("s3_access_key_id");
+                    dcMap.remove("s3_secret_access_key");
+                }
+            }
+            o.put("data", list);
+        }
+        if (needCreateNode == 1) {
+            sql = "select id from om_server_node where nodeid=?";
+            List<Integer> existsId = jdbcTemplate.queryForList(sql, Integer.class, nodeid);
+            if (existsId.isEmpty()) {
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(conn -> {
+                    String insertSql = "insert into om_server_node (nodeid, dcenter, ip) values (?,?,?)";
+                    PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+                    ps.setString(1, nodeid);
+                    ps.setInt(2, dcenter);
+                    ps.setString(3, Util.getClientIP(req));
+                    return ps;
+                }, keyHolder);
+                o.put("id", keyHolder.getKey().intValue());
+            } else {
+                o.put("id", existsId.get(0));
+            }
+        }
         return ResponseEntity.ok(o);
     }
 

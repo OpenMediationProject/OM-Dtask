@@ -31,7 +31,7 @@ public class DcenterScheduler {
 
     @Scheduled(cron = "0 17 * * * ?", zone = "UTC")
     public void hourly() {
-        if (!cfg.isProd()) {
+        if (cfg.isDev()) {
             return;
         }
         if (awsConfig.isDisabled()) {

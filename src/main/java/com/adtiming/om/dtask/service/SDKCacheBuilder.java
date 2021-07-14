@@ -41,7 +41,7 @@ public class SDKCacheBuilder extends PbBuiler {
 
     @Scheduled(fixedDelay = 60000)
     private void buildCache() {
-        if (!cfg.isProd()) {
+        if (cfg.isDev()) {
             return;
         }
         long start = System.currentTimeMillis();
@@ -316,7 +316,8 @@ public class SDKCacheBuilder extends PbBuiler {
         String name = "om_instance";
         build(name, cfg.dir, out -> {
             Map<Integer, Map<String, AdNetworkPB.Instance.CountrySettings>> icp = new HashMap<>();
-            String sql = "select instance_id,country,hour0,hour1,hour2,hour3,hour4,hour5,hour6 from om_instance_country";
+            Map<Integer, Map<String, Float>> instanceCountryEcpm = new HashMap<>();
+            String sql = "select a.instance_id,a.country,hour0,hour1,hour2,hour3,hour4,hour5,hour6,a.manual_ecpm from om_instance_country a left join om_instance b on (a.instance_id = b.id) where b.status=1";
             jdbcTemplate.query(sql, rs -> {
                 AdNetworkPB.Instance.CountrySettings.Builder cp = AdNetworkPB.Instance.CountrySettings.newBuilder();
                 for (int i = 0; i < 7; i++) {
@@ -327,6 +328,8 @@ public class SDKCacheBuilder extends PbBuiler {
                 }
                 icp.computeIfAbsent(rs.getInt("instance_id"), k -> new HashMap<>())
                         .put(rs.getString("country"), cp.build());
+                instanceCountryEcpm.computeIfAbsent(rs.getInt("instance_id"), k -> new HashMap<>())
+                        .put(rs.getString("country"), rs.getFloat("manual_ecpm"));
             });
 
             sql = "SELECT DISTINCT a.id,a.adn_id,a.pub_app_id,a.placement_id,a.placement_key," +
@@ -357,7 +360,8 @@ public class SDKCacheBuilder extends PbBuiler {
                         //.setAbtValue(rs.getInt("ab_test_mode"))
                         .setHbStatus(rs.getInt("hb_status") == 1)
                         .setName(StringUtils.defaultIfEmpty(rs.getString("name"), ""))
-                        .putAllCountrySettings(icp.getOrDefault(instanceId, Collections.emptyMap()));
+                        .putAllCountrySettings(icp.getOrDefault(instanceId, Collections.emptyMap()))
+                        .putAllCountryManualEcpm(instanceCountryEcpm.getOrDefault(instanceId, Collections.emptyMap()));
                 out.writeDelimited(instance.build());
             });
         });
@@ -416,7 +420,7 @@ public class SDKCacheBuilder extends PbBuiler {
                     "a.auto_opt,a.sort_type,a.priority,a.status,a.create_user_id,a.create_time,a.priority," +
                     "e.frequency, e.con_type, e.brand_whitelist, e.brand_blacklist, e.model_whitelist, e.model_blacklist," +
                     "e.gender, e.age_max, e.age_min, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type, " +
-                    "e.osv_exp,e.sdkv_exp,e.appv_exp,e.require_did,e.custom_tags,a.name" +
+                    "e.osv_exp,e.sdkv_exp,e.appv_exp,e.require_did,e.custom_tags,a.name,a.algorithm_id" +
                     " FROM om_placement_rule a" +
                     " left join om_placement b on (a.placement_id=b.id)" +
                     " left join om_publisher_app c on (a.pub_app_id=c.id)" +
@@ -460,7 +464,8 @@ public class SDKCacheBuilder extends PbBuiler {
                         .addAllChannel(str2list(rs.getString("channel"), MODEL_SPLIT_STR))
                         .setChannelBow(rs.getInt("channel_bow") == 1)
                         .setRequireDid(rs.getInt("require_did"))
-                        .setName(StringUtils.defaultString(rs.getString("name")));
+                        .setName(StringUtils.defaultString(rs.getString("name")))
+                        .setAlgorithmId(rs.getInt("algorithm_id"));
                 if (osvExp.hasRange()) {
                     sb.addAllOsvRange(osvExp.getRanges());
                 }

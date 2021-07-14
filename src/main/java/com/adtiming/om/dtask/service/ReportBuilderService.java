@@ -55,7 +55,7 @@ public class ReportBuilderService {
     public static final int SCHEDULE_MONTHLY = 3;
 
     private static final String SPLIT_CHAR = ",";
-    private static Map<String, String> TITLES;
+    private static final Map<String, String> TITLES;
 
     private static final DateTimeFormatter FMT_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final BigDecimal d100 = new BigDecimal(100);
@@ -102,8 +102,14 @@ public class ReportBuilderService {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
+    @Resource
+    private AppConfig cfg;
+
     @Scheduled(cron = "0 */10 * * * ?", zone = "UTC")
     public void scheduleReport() {
+        if (cfg.isDev()) {
+            return;
+        }
         MailSender mailSender = getMailSender();
         if (mailSender == null) {
             return;

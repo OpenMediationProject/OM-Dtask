@@ -61,6 +61,8 @@ message Instance {
 
     string name = 21;
 
+    map<string, float> country_manual_ecpm = 22;
+
     message CountrySettings {
         map<int32, int32> period = 1;
     }
@@ -109,6 +111,7 @@ message InstanceRule {
     repeated Range appv_range = 32;
     int32 require_did = 33; //需要非空deviceId, 0:No,1:Yes
     map<string, CustomTag> custom_tags = 34;
+    int32 algorithm_id = 35; // ECPM预估算法ID om_ecpm_algorithm.id
 }
 
 message CustomTag {

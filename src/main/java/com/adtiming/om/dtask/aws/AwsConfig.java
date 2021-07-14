@@ -3,6 +3,7 @@
 
 package com.adtiming.om.dtask.aws;
 
+import com.adtiming.om.dtask.service.AppConfig;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -20,6 +21,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 
 public class AwsConfig {
 
@@ -37,8 +39,14 @@ public class AwsConfig {
     private AmazonS3 amazonS3;
     private AmazonAthena amazonAthena;
 
+    @Resource
+    private AppConfig cfg;
+
     @PostConstruct
     private void init() {
+        if (cfg.isDev()) {
+            return;
+        }
         if (isDisabled()) {
             LOG.info("aws s3 is disabled");
             return;

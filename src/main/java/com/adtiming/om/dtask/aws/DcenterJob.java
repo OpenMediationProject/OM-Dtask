@@ -4,7 +4,7 @@
 package com.adtiming.om.dtask.aws;
 
 import com.adtiming.om.dtask.dto.DauDimensionsDTO;
-import com.adtiming.om.dtask.dto.MailSender;
+import com.adtiming.om.dtask.service.AppConfig;
 import com.adtiming.om.dtask.service.DictManager;
 import com.adtiming.om.dtask.service.StmtCreator;
 import com.adtiming.om.dtask.util.Constants;
@@ -73,8 +73,14 @@ public class DcenterJob {
     @Resource
     private ObjectMapper objectMapper;
 
+    @Resource
+    private AppConfig cfg;
+
     @PostConstruct
     private void init() {
+        if (cfg.isDev()) {
+            return;
+        }
         if (awsConfig.isDisabled()) {
             return;
         }
@@ -118,6 +124,7 @@ public class DcenterJob {
         collectDatas(AthenaConstants.TABLE_NAME_LR, executeDateTime);
         collectDatas(AthenaConstants.TABLE_NAME_IAP, executeDateTime);
         collectDatas(AthenaConstants.TABLE_NAME_CPTK, executeDateTime);
+        collectDatas(AthenaConstants.TABLE_NAME_EVENT, executeDateTime);
     }
 
     public void collectDatas(String tableName, LocalDateTime executeDateTime) {
@@ -158,7 +165,7 @@ public class DcenterJob {
             LOG.error("There has no dau dimensions conf!");
             return;
         }
-        DauDimensionsDTO dauDimensionsDTO = null;
+        DauDimensionsDTO dauDimensionsDTO;
         try {
             dauDimensionsDTO = objectMapper.readValue(dauDimensionsConf, DauDimensionsDTO.class);
         } catch (IOException e) {

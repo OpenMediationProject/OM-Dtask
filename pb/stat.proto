@@ -52,3 +52,41 @@ message PlacementCountryEcpm {
     string country = 2;
     float ecpm = 3;
 }
+
+//For Auto Waterfall ExponentialSmoothing instance+country+7day
+message InstanceCountryDayEcpm {
+    string day = 1;
+    int32 instance_id = 2;
+    string country = 3;
+    int32 impr = 4;
+    float cost = 5;
+}
+
+//For Auto Waterfall ExponentialSmoothing adn+country+近3天
+message AdnCountryAdTypeEcpm {
+    int32 adn_id = 1;
+    int32 ad_type = 2;
+    string country = 3;
+    float ecpm = 4;
+}
+
+message CountryEcpm {
+    string country = 1;
+    float ecpm = 2;
+}
+
+message AdnAdTypeEcpm {
+    int32 adn_id = 1;
+    int32 ad_type = 2;
+    float ecpm = 3;
+}
+
+message AdTypeEcpm {
+    int32 ad_type = 1;
+    float ecpm = 2;
+}
+
+message AdnEcpm {
+    int32 adn_id = 1;
+    float ecpm = 2;
+}

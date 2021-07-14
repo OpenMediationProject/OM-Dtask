@@ -3,10 +3,12 @@
 
 package com.adtiming.om.dtask.util;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Locale;
+import java.util.Map;
 
 public class Util {
 
@@ -53,6 +55,24 @@ public class Util {
             clientIP = req.getRemoteAddr();
         }
         return clientIP;
+    }
+
+    public static String getString(Map<String, Object> map, String key) {
+        if (map == null || map.isEmpty()) return null;
+        Object obj = map.get(key);
+        if (obj != null) {
+            return obj.toString();
+        }
+        return null;
+    }
+
+    public static int getInt(Map<String, Object> map, String key) {
+        if (map == null || map.isEmpty()) return 0;
+        Object obj = map.get(key);
+        if (obj != null) {
+            return NumberUtils.toInt(obj.toString());
+        }
+        return 0;
     }
 
 }
