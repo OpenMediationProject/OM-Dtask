@@ -55,6 +55,7 @@ public class DcenterScheduler {
         dcenterJob.userReport(executeDate);
         dcenterJob.collectDwsPublisherUser(executeDate);
         dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
+        dcenterJob.pubAppCountryReport(executeDate);
         for (int i = 0; i < 3; i++) {
             LocalDate tmpDate = executeDate.plusDays(-i);
             dcenterJob.syncOdsStatAdnetwork2Athena(tmpDate);

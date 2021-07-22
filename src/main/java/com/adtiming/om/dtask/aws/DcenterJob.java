@@ -157,6 +157,11 @@ public class DcenterJob {
         handleHourlyReport(executeDateTime, "cp", "stat_cp", mysqlTableColumns);
     }
 
+    public void pubAppCountryReport(LocalDate executeDate) {
+        String mysqlTableColumns = "pub_app_id,country,day,uar1,uar2,uar3,uar4,uar5";
+        handleDailyReport(executeDate, "pubapp_country", "stat_pub_app_country_uar", mysqlTableColumns);
+    }
+
     public void userReport(LocalDate executeDate) {
         handleDailyReport(executeDate, "user", "stat_dau", "day,publisher_id,pub_app_id,platform,country,app_version,sdk_version,os_version,ip_count,did_count,dau,deu ");
 

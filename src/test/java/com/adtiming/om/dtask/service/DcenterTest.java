@@ -37,6 +37,7 @@ public class DcenterTest {
         dcenterJob.syncOdsStatAdnetwork2Athena(executeDate);
         dcenterJob.userAdRevenue(executeDate);
         dcenterJob.ltvReport(executeDate);
+        dcenterJob.pubAppCountryReport(executeDate);
     }
 
 

@@ -7,6 +7,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.Map;
 
@@ -73,6 +74,13 @@ public class Util {
             return NumberUtils.toInt(obj.toString());
         }
         return 0;
+    }
+
+    public static BigDecimal getBigDecimal(Map<String, Object> map, String key) {
+        Object o = map.get(key);
+        if (o == null) return null;
+        if (o instanceof BigDecimal) return (BigDecimal) o;
+        return new BigDecimal(o.toString());
     }
 
 }

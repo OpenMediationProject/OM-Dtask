@@ -11,6 +11,7 @@ import com.adtiming.om.pb.PubAppPB;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.util.TypeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -106,7 +107,8 @@ public class SDKCacheBuilder extends PbBuiler {
                 appSegments.computeIfAbsent(rs.getInt("pub_app_id"), k -> new ArrayList<>()).add(seg.build());
             });*/
 
-            sql = "SELECT a.id,a.publisher_id,a.plat,a.app_name,a.app_key,a.bundle_id,a.create_time,a.sdk_event_ids,b.impr_callback_switch" +
+            sql = "SELECT a.id,a.publisher_id,a.plat,a.app_name,a.app_key,a.bundle_id,a.create_time,a.sdk_event_ids," +
+                    "b.impr_callback_switch,a.sdk_report_uar_regions,a.sdk_report_uar_manual,a.sdk_report_uar_auto" +
                     " FROM om_publisher_app a" +
                     " LEFT JOIN om_publisher b ON b.id=a.publisher_id" +
                     " WHERE a.status=1 AND b.status=1";
@@ -128,10 +130,54 @@ public class SDKCacheBuilder extends PbBuiler {
                     pb.addAllEventIds(Arrays.stream(sdkEventIds.split(","))
                             .map(NumberUtils::toInt).collect(Collectors.toList()));
                 }
+                String sdkReportUarRegions = rs.getString("sdk_report_uar_regions");
+                String sdkReportUarManual = rs.getString("sdk_report_uar_manual");
+                String sdkReportUarAuto = rs.getString("sdk_report_uar_auto");
+                if (StringUtils.isNotBlank(sdkReportUarRegions)) {
+                    Set<String> regions = new HashSet<>(str2list(sdkReportUarRegions, ","));
+                    if (StringUtils.isNotBlank(sdkReportUarManual)) {
+                        try {
+                            JSONObject o = JSON.parseObject(sdkReportUarManual);
+                            for (String country : o.keySet()) {
+                                if (!regions.contains(country)) {
+                                    continue;
+                                }
+                                JSONArray uarx = o.getJSONArray(country);
+                                PubAppPB.PublisherApp.CountryUar.Builder cupb =
+                                        PubAppPB.PublisherApp.CountryUar.newBuilder().setCountry(country);
+                                for (Object uar : uarx) {
+                                    cupb.addUarx(TypeUtils.castToFloat(uar));
+                                }
+                                pb.addCountryUars(cupb.build());
+                            }
+                        } catch (Exception e) {
+                            log.error("parse json sdkReportUarManual error", e);
+                        }
+                    } else {
+                        if (StringUtils.isNotBlank(sdkReportUarAuto)) {
+                            try {
+                                JSONObject o = JSON.parseObject(sdkReportUarAuto);
+                                for (String country : o.keySet()) {
+                                    if (!regions.contains(country)) {
+                                        continue;
+                                    }
+                                    JSONArray uarx = o.getJSONArray(country);
+                                    PubAppPB.PublisherApp.CountryUar.Builder cupb =
+                                            PubAppPB.PublisherApp.CountryUar.newBuilder().setCountry(country);
+                                    for (Object uar : uarx) {
+                                        cupb.addUarx(TypeUtils.castToFloat(uar));
+                                    }
+                                    pb.addCountryUars(cupb.build());
+                                }
+                            } catch (Exception e) {
+                                log.error("parse json sdkReportUarAuto error", e);
+                            }
+                        }
+                    }
+                }
                 out.writeDelimited(pb.build());
             });
         });
-
     }
 
     void buildPlacement() {

@@ -15,6 +15,11 @@ message PublisherApp {
     repeated int32 event_ids = 9;
     repeated PublisherAppBlockRule block_rules = 10;
     int32 impr_callback_switch = 11; // Impression callback switch, defualt off
+    repeated CountryUar countryUars = 12;
+    message CountryUar {
+        string country = 1;
+        repeated float uarx = 2;
+    }
     //repeated Segment segments = 11;
 }
 
