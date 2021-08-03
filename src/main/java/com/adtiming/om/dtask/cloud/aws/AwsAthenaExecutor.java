@@ -1,8 +1,9 @@
-// Copyright 2020 ADTIMING TECHNOLOGY COMPANY LIMITED
+// Copyright 2021 ADTIMING TECHNOLOGY COMPANY LIMITED
 // Licensed under the GNU Lesser General Public License Version 3
 
-package com.adtiming.om.dtask.aws;
+package com.adtiming.om.dtask.cloud.aws;
 
+import com.adtiming.om.dtask.cloud.CloudConstants;
 import com.amazonaws.services.athena.model.GetQueryExecutionRequest;
 import com.amazonaws.services.athena.model.GetQueryExecutionResult;
 import com.amazonaws.services.athena.model.QueryExecutionContext;
@@ -13,36 +14,35 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-
-@Component
-public class AthenaExecutor {
+public class AwsAthenaExecutor {
 
     private static final Logger LOG = LogManager.getLogger();
 
     @Value("${aws.athena.workgroup}")
     private String athenaWorkGroup;
 
-    @Resource
-    private AwsConfig awsConfig;
+    private final AwsCloudClient client;
+
+    public AwsAthenaExecutor(AwsCloudClient client) {
+        this.client = client;
+    }
 
     public String submitAthenaQuery(String databases, String sql, String outPutDirectory) {
         StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
                 .withQueryString(sql)
                 .withQueryExecutionContext(new QueryExecutionContext().withDatabase(databases))
                 .withResultConfiguration(new ResultConfiguration().withOutputLocation(outPutDirectory));
-        if(StringUtils.isNotEmpty(athenaWorkGroup)){
+        if (StringUtils.isNotEmpty(athenaWorkGroup)) {
             startQueryExecutionRequest.withWorkGroup(athenaWorkGroup);
         }
-        return awsConfig.getAmazonAthena().startQueryExecution(startQueryExecutionRequest).getQueryExecutionId();
+        return client.getAmazonAthena().startQueryExecution(startQueryExecutionRequest).getQueryExecutionId();
     }
 
     public void waitForQueryToComplete(String queryExecutionId) {
         boolean isQueryStillRunning = true;
         while (isQueryStillRunning) {
-            GetQueryExecutionResult getQueryExecutionResult = awsConfig.getAmazonAthena()
+            GetQueryExecutionResult getQueryExecutionResult = client.getAmazonAthena()
                     .getQueryExecution(new GetQueryExecutionRequest().withQueryExecutionId(queryExecutionId));
             QueryExecutionState queryExecutionState = QueryExecutionState.fromValue(getQueryExecutionResult.getQueryExecution().getStatus().getState());
             switch (queryExecutionState) {
@@ -58,7 +58,7 @@ public class AthenaExecutor {
                     break;
                 default:
                     try {
-                        Thread.sleep(AthenaConstants.SLEEP_AMOUNT_IN_MS);
+                        Thread.sleep(CloudConstants.SLEEP_AMOUNT_IN_MS);
                     } catch (InterruptedException e) {
                         LOG.error("query was sleep, id: {}", queryExecutionId, e);
                     }

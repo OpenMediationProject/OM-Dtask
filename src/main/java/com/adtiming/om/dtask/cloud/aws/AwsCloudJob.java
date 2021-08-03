@@ -1,8 +1,10 @@
-// Copyright 2020 ADTIMING TECHNOLOGY COMPANY LIMITED
+// Copyright 2021 ADTIMING TECHNOLOGY COMPANY LIMITED
 // Licensed under the GNU Lesser General Public License Version 3
 
-package com.adtiming.om.dtask.aws;
+package com.adtiming.om.dtask.cloud.aws;
 
+import com.adtiming.om.dtask.cloud.CloudConstants;
+import com.adtiming.om.dtask.cloud.CloudJob;
 import com.adtiming.om.dtask.dto.DauDimensionsDTO;
 import com.adtiming.om.dtask.service.AppConfig;
 import com.adtiming.om.dtask.service.DictManager;
@@ -12,13 +14,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -42,30 +42,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
-public class DcenterJob {
+public class AwsCloudJob implements CloudJob {
+
     private static final Logger LOG = LogManager.getLogger();
 
-    @Resource
-    private TemplateEngine templateEngine;
-
-    @Resource
-    private AwsConfig awsConfig;
+    private final String bucketName;
 
     @Value("${aws.athena.database}")
     private String athenaDatabase;
 
     @Value("${aws.athena.data-dir}")
-    private String dataDirectory;
+    private String awsAtenaDataDir;
 
     @Resource
-    private S3Executor s3Executor;
-
-    @Resource
-    private AthenaExecutor athenaExecutor;
-
-    @Resource
-    private JdbcTemplate jdbcTemplate;
+    private AppConfig cfg;
 
     @Resource
     private DictManager dictManager;
@@ -74,14 +64,25 @@ public class DcenterJob {
     private ObjectMapper objectMapper;
 
     @Resource
-    private AppConfig cfg;
+    private JdbcTemplate jdbcTemplate;
+
+    @Resource
+    private TemplateEngine templateEngine;
+
+    @Resource
+    private AwsS3Executor s3Executor;
+
+    @Resource
+    private AwsAthenaExecutor athenaExecutor;
+
+
+    public AwsCloudJob(AwsCloudClient client) {
+        this.bucketName = client.getBucket();
+    }
 
     @PostConstruct
     private void init() {
         if (cfg.isDev()) {
-            return;
-        }
-        if (awsConfig.isDisabled()) {
             return;
         }
         LocalDateTime executeDateTime = LocalDateTime.now(ZoneOffset.UTC);
@@ -97,7 +98,7 @@ public class DcenterJob {
         LOG.info("init database start...");
         HashMap<String, Object> valueMap = new HashMap<>();
         valueMap.put("database", athenaDatabase);
-        String initSql = this.templateEngine.process("init_database", new Context(null, valueMap));
+        String initSql = this.templateEngine.process("cloud/aws/init_database", new Context(null, valueMap));
         LOG.debug("init database, sql:\n{}", initSql);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, initSql, resultDirOnS3);
         athenaExecutor.waitForQueryToComplete(queryExecutionId);
@@ -106,12 +107,12 @@ public class DcenterJob {
 
     private void initTable(String resultDirOnS3) {
         HashMap<String, Object> valueMap = new HashMap<>();
-        valueMap.put("s3Bucket", awsConfig.getS3Bucket());
-        valueMap.put("tableDataPath", AthenaConstants.DATA_PATH_TABLE);
+        valueMap.put("s3Bucket", bucketName);
+        valueMap.put("tableDataPath", CloudConstants.DATA_PATH_TABLE);
         LOG.info("init table start...");
-        AthenaConstants.TABLE_NAMES.forEach(tableName -> {
+        CloudConstants.TABLE_NAMES.forEach(tableName -> {
             LOG.info("init table, name: {}", tableName);
-            String initSql = this.templateEngine.process("init_table_" + tableName, new Context(null, valueMap));
+            String initSql = this.templateEngine.process("cloud/aws/init_table_" + tableName, new Context(null, valueMap));
             LOG.debug("init table, sql:\n{}", initSql);
             String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, initSql, resultDirOnS3);
             athenaExecutor.waitForQueryToComplete(queryExecutionId);
@@ -120,13 +121,15 @@ public class DcenterJob {
         LOG.info("init table complete, all");
     }
 
+    @Override
     public void collectDatas(LocalDateTime executeDateTime) {
-        collectDatas(AthenaConstants.TABLE_NAME_LR, executeDateTime);
-        collectDatas(AthenaConstants.TABLE_NAME_IAP, executeDateTime);
-        collectDatas(AthenaConstants.TABLE_NAME_CPTK, executeDateTime);
-        collectDatas(AthenaConstants.TABLE_NAME_EVENT, executeDateTime);
+        collectDatas(CloudConstants.TABLE_NAME_LR, executeDateTime);
+        collectDatas(CloudConstants.TABLE_NAME_IAP, executeDateTime);
+        collectDatas(CloudConstants.TABLE_NAME_CPTK, executeDateTime);
+        collectDatas(CloudConstants.TABLE_NAME_EVENT, executeDateTime);
     }
 
+    @Override
     public void collectDatas(String tableName, LocalDateTime executeDateTime) {
         String year = executeDateTime.format(Constants.FORMATTER_YYYY);
         String month = executeDateTime.format(Constants.FORMATTER_MM);
@@ -141,43 +144,47 @@ public class DcenterJob {
         valueMap.put("month", month);
         valueMap.put("day", day);
         valueMap.put("hour", hour);
-        valueMap.put("s3Bucket", awsConfig.getS3Bucket());
-        valueMap.put("tableDataPath", AthenaConstants.DATA_PATH_TABLE);
+        valueMap.put("s3Bucket", bucketName);
+        valueMap.put("tableDataPath", CloudConstants.DATA_PATH_TABLE);
         valueMap.put("tableName", tableName);
         addPartition("add_hourly_partition", valueMap);
     }
 
+    @Override
     public void commonReport(LocalDateTime executeDateTime) {
         String mysqlTableColumns = "day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,scene_id,adn_id,abt,bid,app_version,sdk_version,os_version,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr,bid_req,bid_resp,bid_resp_price,bid_win,bid_win_price ";
         handleHourlyReport(executeDateTime, "common", "stat_lr", mysqlTableColumns);
     }
 
+    @Override
     public void cpReport(LocalDateTime executeDateTime) {
         String mysqlTableColumns = "day,hour,publisher_id,pub_app_id,placement_id,country,app_id,campaign_id,creative_id,impr,click,win_price";
         handleHourlyReport(executeDateTime, "cp", "stat_cp", mysqlTableColumns);
     }
 
+    @Override
     public void pubAppCountryReport(LocalDate executeDate) {
         String mysqlTableColumns = "pub_app_id,country,day,uar1,uar2,uar3,uar4,uar5";
         handleDailyReport(executeDate, "pubapp_country", "stat_pub_app_country_uar", mysqlTableColumns);
     }
 
+    @Override
     public void userReport(LocalDate executeDate) {
         handleDailyReport(executeDate, "user", "stat_dau", "day,publisher_id,pub_app_id,platform,country,app_version,sdk_version,os_version,ip_count,did_count,dau,deu ");
 
         String dauDimensionsConf = dictManager.val("/om/dau_dimensions");
-        if (StringUtils.isEmpty(dauDimensionsConf)){
+        if (StringUtils.isEmpty(dauDimensionsConf)) {
             LOG.error("There has no dau dimensions conf!");
             return;
         }
-        DauDimensionsDTO dauDimensionsDTO;
+        DauDimensionsDTO dauDimensionsDTO = null;
         try {
             dauDimensionsDTO = objectMapper.readValue(dauDimensionsConf, DauDimensionsDTO.class);
         } catch (IOException e) {
             LOG.error("Parse DauDimensionsDTO error:", e);
             return;
         }
-        if (dauDimensionsDTO == null){
+        if (dauDimensionsDTO == null) {
             return;
         }
         if (dauDimensionsDTO.getAdn() != null && dauDimensionsDTO.getAdn() == 1) {
@@ -215,7 +222,7 @@ public class DcenterJob {
             valueMap.put("hour", hour);
 
             LOG.info("report {}, query start...", reportName);
-            String reportSql = this.templateEngine.process("report_" + reportName, new Context(null, valueMap));
+            String reportSql = this.templateEngine.process("cloud/aws/report_" + reportName, new Context(null, valueMap));
             LOG.debug("report {}, query sql:\n{}", reportName, reportSql);
             String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
             String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
@@ -223,7 +230,7 @@ public class DcenterJob {
             LOG.info("report {}, query complete, id: {}, result directory: {} ", reportName, queryExecutionId, resultDirOnS3);
 
             LOG.info("report {}, download start...", reportName);
-            Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
+            Path localPath = s3Executor.downloadAthenaQueryResultObj(awsAtenaDataDir, bucketName, year, month, day, queryExecutionId);
             LOG.info("report {}, download complete", reportName);
 
             // LOAD TO MYSQL
@@ -241,19 +248,8 @@ public class DcenterJob {
             LOG.debug("report {}, load 2 mysql sql:\n{}", reportName, sql);
             jdbcTemplate.execute(sql);
             LOG.info("report {}, load 2 mysql complete", reportName);
-        } catch (Exception e){
+        } catch (Exception e) {
             LOG.error("Do report failed! Name {} mysql table name {}", reportName, mysqlTableName, e);
-        }
-    }
-
-    public void clearTmpLocalDataDirectory(LocalDate executeDate) {
-        Path tmpLocalPath = Paths.get(dataDirectory, executeDate.format(Constants.FORMATTER_YYYYMMDD));
-        try {
-            LOG.info("clear tmp local data directory start... : {}", tmpLocalPath);
-            FileUtils.deleteDirectory(new File(tmpLocalPath.toUri()));
-            LOG.info("clear tmp local data directory complete : {}", tmpLocalPath);
-        } catch (IOException e) {
-            LOG.error("clear tmp local data directory, directory: {}", tmpLocalPath, e);
         }
     }
 
@@ -262,16 +258,16 @@ public class DcenterJob {
         String month = executeDate.format(Constants.FORMATTER_MM);
         String day = executeDate.format(Constants.FORMATTER_DD);
         Path odsOmAdnetworkPath = dumpOdsOmAdnetworkData(year, month, day);
-        String s3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, AthenaConstants.TABLE_NAME_ODS_OM_ADNETWORK, "data.dsv");
+        String s3Key = String.join("/", CloudConstants.DATA_PATH_TABLE, CloudConstants.TABLE_NAME_ODS_OM_ADNETWORK, "data.dsv");
         LOG.info("upload om adnetwork, start...");
-        s3Executor.uploadObject(awsConfig.getS3Bucket(), s3Key, new File(odsOmAdnetworkPath.toUri()));
+        s3Executor.uploadObject(bucketName, s3Key, new File(odsOmAdnetworkPath.toUri()));
         LOG.info("upload om adnetwork, complete");
     }
 
     private Path dumpOdsOmAdnetworkData(String year, String month, String day) {
         LOG.info("dump om adnetwork, start...");
-        String odsOmAdnetworkFile = String.join("/", year + month + day, "mysql", AthenaConstants.TABLE_NAME_ODS_OM_ADNETWORK + ".dsv");
-        Path odsOmAdnetworkPath = Paths.get(dataDirectory, odsOmAdnetworkFile);
+        String odsOmAdnetworkFile = String.join("/", year + month + day, "mysql", CloudConstants.TABLE_NAME_ODS_OM_ADNETWORK + ".dsv");
+        Path odsOmAdnetworkPath = Paths.get(awsAtenaDataDir, odsOmAdnetworkFile);
         try {
             Files.createDirectories(odsOmAdnetworkPath.getParent());
         } catch (IOException e) {
@@ -306,17 +302,17 @@ public class DcenterJob {
         String day = executeDate.format(Constants.FORMATTER_DD);
 
         Path odsStatAdnetworkPath = dumpOdsStatAdnetworkData(year, month, day);
-        String s3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, AthenaConstants.TABLE_NAME_ODS_STAT_ADNETWORK, year, month, day, "data.dsv");
+        String s3Key = String.join("/", CloudConstants.DATA_PATH_TABLE, CloudConstants.TABLE_NAME_ODS_STAT_ADNETWORK, year, month, day, "data.dsv");
         LOG.info("upload stat adnetwork, start...");
-        s3Executor.uploadObject(awsConfig.getS3Bucket(), s3Key, new File(odsStatAdnetworkPath.toUri()));
+        s3Executor.uploadObject(bucketName, s3Key, new File(odsStatAdnetworkPath.toUri()));
         LOG.info("upload stat adnetwork, complete");
         addOdsStatAdnetworkPartition(year, month, day);
     }
 
     private Path dumpOdsStatAdnetworkData(String year, String month, String day) {
         LOG.info("dump stat adnetwork, start...");
-        String odsStatAdnetworkFile = String.join("/", year + month + day, "mysql", AthenaConstants.TABLE_NAME_ODS_STAT_ADNETWORK + ".dsv");
-        Path odsStatAdnetworkPath = Paths.get(dataDirectory, odsStatAdnetworkFile);
+        String odsStatAdnetworkFile = String.join("/", year + month + day, "mysql", CloudConstants.TABLE_NAME_ODS_STAT_ADNETWORK + ".dsv");
+        Path odsStatAdnetworkPath = Paths.get(awsAtenaDataDir, odsStatAdnetworkFile);
         try {
             Files.createDirectories(odsStatAdnetworkPath.getParent());
         } catch (IOException e) {
@@ -357,12 +353,13 @@ public class DcenterJob {
         valueMap.put("year", year);
         valueMap.put("month", month);
         valueMap.put("day", day);
-        valueMap.put("s3Bucket", awsConfig.getS3Bucket());
-        valueMap.put("tableDataPath", AthenaConstants.DATA_PATH_TABLE);
-        valueMap.put("tableName", AthenaConstants.TABLE_NAME_ODS_STAT_ADNETWORK);
+        valueMap.put("s3Bucket", bucketName);
+        valueMap.put("tableDataPath", CloudConstants.DATA_PATH_TABLE);
+        valueMap.put("tableName", CloudConstants.TABLE_NAME_ODS_STAT_ADNETWORK);
         addPartition("add_daily_partition", valueMap);
     }
 
+    @Override
     public void userAdRevenue(LocalDate executeDate) {
         String year = executeDate.format(Constants.FORMATTER_YYYY);
         String month = executeDate.format(Constants.FORMATTER_MM);
@@ -380,7 +377,7 @@ public class DcenterJob {
         valueMap.put("month", month);
         valueMap.put("day", day);
         LOG.info("uar, query start...");
-        String uarSql = this.templateEngine.process("user_ad_revenue", new Context(null, valueMap));
+        String uarSql = this.templateEngine.process("cloud/aws/user_ad_revenue", new Context(null, valueMap));
         LOG.debug("uar, query sql:\n{}", uarSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, uarSql, resultDirOnS3);
@@ -391,7 +388,7 @@ public class DcenterJob {
 
     private void splitPubAppUar(String year, String month, String day, String queryExecutionId) {
         LOG.info("uar, download start...");
-        Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
+        Path localPath = s3Executor.downloadAthenaQueryResultObj(awsAtenaDataDir, bucketName, year, month, day, queryExecutionId);
         LOG.info("uar, download complete");
         LOG.info("uar, split publisher app data start..., local path: {}", localPath);
         HashMap<String, BufferedWriter> pubAppUarWriters = new HashMap<>();
@@ -403,7 +400,7 @@ public class DcenterJob {
                 String pubAppId = values.get(0);
                 BufferedWriter pubAppUarWriter = pubAppUarWriters.get(pubAppId);
                 if (pubAppUarWriter == null) {
-                    Path pubAappUarPath = Paths.get(dataDirectory, year + month + day, "uar", pubAppId + ".csv");
+                    Path pubAappUarPath = Paths.get(awsAtenaDataDir, year + month + day, "uar", pubAppId + ".csv");
                     Files.createDirectories(pubAappUarPath.getParent());
                     pubAppUarWriter = Files.newBufferedWriter(pubAappUarPath);
                     pubAppUarWriters.put(pubAppId, pubAppUarWriter);
@@ -427,8 +424,8 @@ public class DcenterJob {
 
     private void compressPubAppUar(String year, String month, String day) {
         LOG.info("uar, compresss publisher app data start...");
-        Path pubAppUarLocalDir = Paths.get(dataDirectory, year + month + day, "uar");
-        Path pubAppUarGzLocalDir = Paths.get(dataDirectory, year + month + day, "uar_zip");
+        Path pubAppUarLocalDir = Paths.get(awsAtenaDataDir, year + month + day, "uar");
+        Path pubAppUarGzLocalDir = Paths.get(awsAtenaDataDir, year + month + day, "uar_zip");
         try {
             Files.createDirectories(pubAppUarGzLocalDir);
         } catch (IOException e) {
@@ -448,27 +445,27 @@ public class DcenterJob {
 
     private void uploadPubAppUar(String year, String month, String day) {
         LOG.info("uar, upload publisher app data start...");
-        Path pubAppUarLocalDir = Paths.get(dataDirectory, year + month + day, "uar_zip");
+        Path pubAppUarLocalDir = Paths.get(awsAtenaDataDir, year + month + day, "uar_zip");
         int pubAppUarLocalFileSize = 0;
         File[] pubAppUarLocalFiles = new File(pubAppUarLocalDir.toUri()).listFiles(pathName -> !pathName.isHidden());
         if (pubAppUarLocalFiles != null) {
             for (File pubAppUarLocalFile : pubAppUarLocalFiles) {
-                String pubAppUarDataS3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, "uar_data", year, month, day, pubAppUarLocalFile.getName());
-                s3Executor.uploadObject(awsConfig.getS3Bucket(), pubAppUarDataS3Key, pubAppUarLocalFile);
+                String pubAppUarDataS3Key = String.join("/", CloudConstants.DATA_PATH_TABLE, "uar_data", year, month, day, pubAppUarLocalFile.getName());
+                s3Executor.uploadObject(bucketName, pubAppUarDataS3Key, pubAppUarLocalFile);
             }
             pubAppUarLocalFileSize = pubAppUarLocalFiles.length;
         }
         LOG.info("uar, upload publisher app data complete, app size: {}, local path: {}", pubAppUarLocalFileSize, pubAppUarLocalDir);
     }
 
-    private void addPartition(String templateName, HashMap<String, Object> valueMap) {
+    private void addPartition(String templateName, Map<String, Object> valueMap) {
         String tableName = (String) valueMap.get("tableName");
         String year = (String) valueMap.get("year");
         String month = (String) valueMap.get("month");
         String day = (String) valueMap.get("day");
         String hour = (String) valueMap.get("hour");
         LOG.info("add partition start..., table: {}, year: {}, month: {}, day: {}, hour: {}", tableName, year, month, day, hour);
-        String partitionSql = this.templateEngine.process(templateName, new Context(null, valueMap));
+        String partitionSql = this.templateEngine.process("cloud/aws/" + templateName, new Context(null, valueMap));
         LOG.debug("add partition sql:\n{}", partitionSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, partitionSql, resultDirOnS3);
@@ -477,7 +474,7 @@ public class DcenterJob {
     }
 
     private String getAthenaQueryResultDirOnS3(String year, String month, String day) {
-        return String.join("/", "s3:/", awsConfig.getS3Bucket(), AthenaConstants.DATA_PATH_ATHENA, year, month, day);
+        return String.join("/", "s3:/", bucketName, AwsConstants.DATA_PATH_ATHENA, year, month, day);
     }
 
     private void compress2Zip(Path parentZipPath, File dataFile) {
@@ -503,11 +500,12 @@ public class DcenterJob {
         }
     }
 
+    @Override
     public void collectDwsPublisherUser(LocalDate executeDate) {
         Object collectDate = executeDate.format(Constants.FORMATTER_YYYYMMDD);
-        String s3Key = String.join("/", AthenaConstants.DATA_PATH_TABLE, AthenaConstants.TABLE_NAME_DWS_PUBLISHER_USER, "ymd=" + collectDate + "/");
+        String s3Key = String.join("/", CloudConstants.DATA_PATH_TABLE, CloudConstants.TABLE_NAME_DWS_PUBLISHER_USER, "ymd=" + collectDate + "/");
         LOG.info("collect dws publisher user, clean dir, start...");
-        s3Executor.deleteObject(awsConfig.getS3Bucket(), s3Key);
+        s3Executor.deleteObject(bucketName, s3Key);
         LOG.info("collect dws publisher user, clean dir, complete");
 
         Map<String, Object> valueMap = new HashMap<>();
@@ -516,7 +514,7 @@ public class DcenterJob {
         valueMap.put("day", executeDate.format(Constants.FORMATTER_DD));
 
         LOG.info("collect dws publisher user, query start...");
-        String reportSql = this.templateEngine.process("collect_dws_publisher_user", new Context(null, valueMap));
+        String reportSql = this.templateEngine.process("cloud/aws/collect_dws_publisher_user", new Context(null, valueMap));
         LOG.debug("collect dws publisher user, query sql:\n{}", reportSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(executeDate.format(Constants.FORMATTER_YYYY), executeDate.format(Constants.FORMATTER_MM), executeDate.format(Constants.FORMATTER_DD));
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
@@ -524,6 +522,7 @@ public class DcenterJob {
         LOG.info("collect dws publisher user,, query complete, id: {}, result directory: {} ", queryExecutionId, resultDirOnS3);
     }
 
+    @Override
     public void ltvReport(LocalDate executeDate) {
         String year = executeDate.format(Constants.FORMATTER_YYYY);
         String month = executeDate.format(Constants.FORMATTER_MM);
@@ -541,7 +540,7 @@ public class DcenterJob {
         valueMap.put("beginDay", beginDate.format(Constants.FORMATTER_DD));
 
         LOG.info("ltv report, query start...");
-        String reportSql = this.templateEngine.process("report_ltv", new Context(null, valueMap));
+        String reportSql = this.templateEngine.process("cloud/aws/report_ltv", new Context(null, valueMap));
         LOG.debug("ltv report, query sql:\n{}", reportSql);
         String resultDirOnS3 = getAthenaQueryResultDirOnS3(year, month, day);
         String queryExecutionId = athenaExecutor.submitAthenaQuery(athenaDatabase, reportSql, resultDirOnS3);
@@ -549,7 +548,7 @@ public class DcenterJob {
         LOG.info("ltv report, query complete, id: {}, result directory: {} ", queryExecutionId, resultDirOnS3);
 
         LOG.info("ltv report, download start...");
-        Path localPath = s3Executor.downloadAthenaQueryResultObj(dataDirectory, awsConfig.getS3Bucket(), year, month, day, queryExecutionId);
+        Path localPath = s3Executor.downloadAthenaQueryResultObj(awsAtenaDataDir, bucketName, year, month, day, queryExecutionId);
         LOG.info("ltv report, download complete");
 
         // LOAD TO MYSQL

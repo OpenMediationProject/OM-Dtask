@@ -17,13 +17,13 @@ WHERE serverTs IS NOT NULL
   AND y = '[(${year})]'
   AND m = '[(${month})]'
   AND d = '[(${day})]'
-GROUP BY '[(${year})]-[(${month})]-[(${day})]',
-         coalesce(publisherId, 0),
-         coalesce(pubAppId, 0),
-         coalesce(plat, -1),
-         country,
-         coalesce(mid, 0),
-         appv,
-         sdkv,
-         osv
+GROUP BY
+    coalesce(publisherId, 0),
+    coalesce(pubAppId, 0),
+    coalesce(plat, -1),
+    country,
+    coalesce(mid, 0),
+    appv,
+    sdkv,
+    osv
 ;

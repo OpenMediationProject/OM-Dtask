@@ -62,8 +62,14 @@ public class DBPreparer {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
+    @Resource
+    private AppConfig appConfig;
+
     @PostConstruct
     private void init() {
+        if (appConfig.isDev()) {
+            return;
+        }
         // make sure partitions exists
         createCurrentDayPartitions();
         createNextDayPartitions();

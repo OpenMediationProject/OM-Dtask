@@ -1,4 +1,4 @@
-// Copyright 2020 ADTIMING TECHNOLOGY COMPANY LIMITED
+// Copyright 2021 ADTIMING TECHNOLOGY COMPANY LIMITED
 // Licensed under the GNU Lesser General Public License Version 3
 
 package com.adtiming.om.dtask.web;
@@ -6,6 +6,7 @@ package com.adtiming.om.dtask.web;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.servlet.error.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorViewResolver;
+import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,14 +32,9 @@ public class BaseErrorPage extends AbstractErrorController {
         super(errorAttributes, errorViewResolvers);
     }
 
-    @Override
-    public String getErrorPath() {
-        return "/error";
-    }
-
     @RequestMapping
     public ResponseEntity<Map<String, Object>> error(HttpServletRequest request) {
-        Map<String, Object> body = getErrorAttributes(request, false);
+        Map<String, Object> body = getErrorAttributes(request, ErrorAttributeOptions.defaults());
         HttpStatus status = getStatus(request);
         return new ResponseEntity<>(body, status);
     }

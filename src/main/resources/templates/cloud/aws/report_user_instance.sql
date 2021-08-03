@@ -4,6 +4,7 @@ SELECT '[(${year})]-[(${month})]-[(${day})]'                          AS day,
        coalesce(plat, -1)                                             AS platform,
        country,
        coalesce(pid, 0)                                               AS placement_id,
+       coalesce(iid, 0)                                               AS instance_id,
        coalesce(mid, 0)                                               AS adn_id,
        appv                                                           AS app_version,
        sdkv                                                           AS sdk_version,
@@ -18,14 +19,15 @@ WHERE serverTs IS NOT NULL
   AND y = '[(${year})]'
   AND m = '[(${month})]'
   AND d = '[(${day})]'
-GROUP BY '[(${year})]-[(${month})]-[(${day})]',
-         coalesce(publisherId, 0),
-         coalesce(pubAppId, 0),
-         coalesce(plat, -1),
-         country,
-         coalesce(pid, 0),
-         coalesce(mid, 0),
-         appv,
-         sdkv,
-         osv
+GROUP BY
+    coalesce(publisherId, 0),
+    coalesce(pubAppId, 0),
+    coalesce(plat, -1),
+    country,
+    coalesce(pid, 0),
+    coalesce(iid, 0),
+    coalesce(mid, 0),
+    appv,
+    sdkv,
+    osv
 ;

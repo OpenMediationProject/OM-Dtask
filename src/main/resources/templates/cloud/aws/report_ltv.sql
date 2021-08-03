@@ -1,3 +1,4 @@
+
 SELECT
        '[(${executeYear})][(${executeMonth})][(${executeDay})]'                                                                         AS execute_date,
        user_info_data.ymd                                                                                                               AS base_date,

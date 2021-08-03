@@ -1,7 +1,7 @@
 package com.adtiming.om.dtask.service;
 
 import com.adtiming.om.dtask.Application;
-import com.adtiming.om.dtask.aws.DcenterJob;
+import com.adtiming.om.dtask.cloud.CloudJob;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class DcenterTest {
 
     @Resource
-    private DcenterJob dcenterJob;
+    private CloudJob dcenterJob;
 
     @Test
     public void testHourly() {
@@ -30,11 +30,11 @@ public class DcenterTest {
 
     @Test
     public void testDaily() {
-        LocalDate executeDate = LocalDate.of(2020, 12, 1);
+        LocalDate executeDate = LocalDate.of(2021, 7, 30);
         dcenterJob.userReport(executeDate);
         dcenterJob.collectDwsPublisherUser(executeDate);
-        dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
-        dcenterJob.syncOdsStatAdnetwork2Athena(executeDate);
+//        dcenterJob.syncOdsOmAdnetwork2Athena(executeDate);
+//        dcenterJob.syncOdsStatAdnetwork2Athena(executeDate);
         dcenterJob.userAdRevenue(executeDate);
         dcenterJob.ltvReport(executeDate);
         dcenterJob.pubAppCountryReport(executeDate);

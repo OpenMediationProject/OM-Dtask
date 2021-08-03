@@ -52,3 +52,8 @@ aws:
     data-dir: data/aws
     workgroup:
 
+huawei:
+  dli:
+    database: open_mediation
+    data-dir: data/dli
+
