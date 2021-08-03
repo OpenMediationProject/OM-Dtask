@@ -41,7 +41,16 @@ public class GoogleUarService {
             List<Map<String, Object>> list = jdbcTemplateW.queryForList(sql);
 
             if (!list.isEmpty()) {
-                Set<Integer> pubAppIds = list.stream().map(o -> Util.getInt(o, "id")).collect(Collectors.toSet());
+                Set<Integer> pubAppIds = new HashSet<>(list.size());
+                Map<Integer, Set<String>> uarCountryMap = new HashMap<>();
+                for (Map<String, Object> map : list) {
+                    int pubAppId = Util.getInt(map, "id");
+                    pubAppIds.add(pubAppId);
+                    String uarRegions = Util.getString(map, "sdk_report_uar_regions");
+                    if (StringUtils.isNoneBlank(uarRegions)) {
+                        uarCountryMap.put(pubAppId, Arrays.stream(uarRegions.split(",")).collect(Collectors.toSet()));
+                    }
+                }
                 LocalDateTime now = LocalDateTime.now();
                 String mysqlStartDay = now.plusDays(-7).format(DateTimeFormatter.ISO_DATE);
                 String mysqlEndDay = now.format(DateTimeFormatter.ISO_DATE);
@@ -60,6 +69,7 @@ public class GoogleUarService {
                 List<Object[]> insertParams = new ArrayList<>();
                 String updateSql = "update om_publisher_app set sdk_report_uar_auto=? where id=?";
                 List<Object[]> updateParams = new ArrayList<>();
+                final BigDecimal d1000 = new BigDecimal(1000);
                 pubAppCountryDayUar.forEach((pubAppId, countryDayUar) -> {
                     Map<String, BigDecimal[]> countryUar = new HashMap<>();
                     countryDayUar.forEach((country, dayUar) -> {
@@ -89,7 +99,12 @@ public class GoogleUarService {
                             jdbcTemplateW.batchUpdate(insertSql, insertParams);
                             insertParams.clear();
                         }
-                        countryUar.put(country, new BigDecimal[]{predictUar1, predictUar2, predictUar3, predictUar4, predictUar5});
+                        Set<String> cus = uarCountryMap.getOrDefault(pubAppId, Collections.emptySet());
+                        if (cus.contains(country)) {
+                            countryUar.put(country, new BigDecimal[]{predictUar1.multiply(d1000),
+                                    predictUar2.multiply(d1000), predictUar3.multiply(d1000),
+                                    predictUar4.multiply(d1000), predictUar5.multiply(d1000)});
+                        }
                     });
                     updateParams.add(new Object[]{JSON.toJSONString(countryUar), pubAppId});
                     if (updateParams.size() >= 1000) {

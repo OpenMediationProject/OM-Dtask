@@ -70,7 +70,8 @@ CREATE EXTERNAL TABLE IF NOT EXISTS lr
     bidRes      int,
     bidResPrice decimal(20, 8),
     bidWin      int,
-    bidWinPrice decimal(20, 8)
+    bidWinPrice decimal(20, 8),
+    revenue     decimal(20, 8)
 ) PARTITIONED BY (
     y string,
     m string,
