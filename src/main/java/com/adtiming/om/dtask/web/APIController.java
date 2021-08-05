@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 public class APIController {
@@ -40,11 +41,16 @@ public class APIController {
     public ResponseEntity<?> getSnodeConfig(
             HttpServletRequest req,
             @RequestParam("nodeid") String nodeid,
-            @RequestParam("dcenter") int dcenter, @RequestParam(value = "nc", defaultValue = "1") int needCreateNode) {
+            @RequestParam("dcenter") int dcenter,
+            @RequestParam(value = "nc", defaultValue = "1") int needCreateNode) {
         log.debug("snode/config/get, nodeid: {}, dcenter: {}", nodeid, dcenter);
         String sql = "select id,name,kafka_status,kafka_servers,redis_servers,cloud_type,cloud_config" +
                 " from om_server_dcenter where id=?";
-        JSONObject o = jdbcTemplate.queryForObject(sql, JSONRowMapper.getCamelInstance(), dcenter);
+        List<JSONObject> list = jdbcTemplate.query(sql, JSONRowMapper.getCamelInstance(), dcenter);
+        if (list.isEmpty()) {
+            return ResponseEntity.badRequest().body("dcenter not exists");
+        }
+        JSONObject o = list.get(0);
         o.put("dcenter", dcenter);
         if (o.getIntValue("kafkaStatus") == 0) {
             o.remove("kafkaServers");
@@ -67,7 +73,7 @@ public class APIController {
                     ps.setString(3, Util.getClientIP(req));
                     return ps;
                 }, keyHolder);
-                o.put("id", keyHolder.getKey().intValue());
+                o.put("id", Objects.requireNonNull(keyHolder.getKey()).intValue());
             } else {
                 o.put("id", existsId.get(0));
             }
@@ -77,51 +83,25 @@ public class APIController {
     }
 
     /**
-     * used for om-server init
+     * used for om-sc-dtask init
      *
-     * @return snode config
+     * @return server center configs
      */
-    @GetMapping("/snode/config/list")
-    public ResponseEntity<?> getSnodeConfigs(
-            HttpServletRequest req,
-            @RequestParam("nodeid") String nodeid,
-            @RequestParam("dcenter") int dcenter, @RequestParam(value = "nc", defaultValue = "1") int needCreateNode) {
-        log.debug("snode/config/list, nodeid: {}", nodeid);
+    @GetMapping("/sc/config/list")
+    public ResponseEntity<?> getServerCenterConfigs(@RequestParam("nodeid") String nodeid) {
+        log.debug("sc/config/list, nodeid: {}", nodeid);
         String sql = "select id dcenter,name,kafka_status,kafka_servers,redis_servers,cloud_type,cloud_config" +
                 " from om_server_dcenter";
         List<JSONObject> list = jdbcTemplate.query(sql, JSONRowMapper.getCamelInstance());
         JSONObject o = new JSONObject();
         if (!list.isEmpty()) {
             for (JSONObject dcMap : list) {
-                int kafkaStatus = dcMap.getIntValue("kafkaStatus");
-                if (kafkaStatus == 0) {
-                    dcMap.remove("kafkaServers");
-                }
                 String cloudType = dcMap.getString("cloudType");
                 if (StringUtils.isEmpty(cloudType)) {
                     dcMap.remove("cloudConfig");
                 }
             }
             o.put("data", list);
-        }
-        if (needCreateNode == 1) {
-            sql = "select id from om_server_node where nodeid=?";
-            List<Integer> existsId = jdbcTemplate.queryForList(sql, Integer.class, nodeid);
-            if (existsId.isEmpty()) {
-                KeyHolder keyHolder = new GeneratedKeyHolder();
-                jdbcTemplate.update(conn -> {
-                    // language=MySQL
-                    String insertSql = "insert into om_server_node (nodeid, dcenter, ip) values (?,?,?)";
-                    PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
-                    ps.setString(1, nodeid);
-                    ps.setInt(2, dcenter);
-                    ps.setString(3, Util.getClientIP(req));
-                    return ps;
-                }, keyHolder);
-                o.put("id", keyHolder.getKey().intValue());
-            } else {
-                o.put("id", existsId.get(0));
-            }
         }
         return ResponseEntity.ok(o);
     }
