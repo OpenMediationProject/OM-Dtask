@@ -153,6 +153,8 @@ public class HuaweiCloudJob implements CloudJob {
         valueMap.put("tableName", tableName);
 
         LOG.info("add partition start..., table: {}, year: {}, month: {}, day: {}, hour: {}", tableName, year, month, day, hour);
+        String dir = String.join("/", CloudConstants.DATA_PATH_TABLE, tableName, year, month, day, hour) + "/";
+        huaweiObsExecutor.createDirectory(bucketName, dir);
         String partitionSql = this.templateEngine.process("cloud/huawei/add_hourly_partition", new Context(null, valueMap));
         LOG.debug("add partition sql:\n{}", partitionSql);
         String jobId = huaweiDliExecutor.submitDliQuery(huaweiDliDatabase, partitionSql);

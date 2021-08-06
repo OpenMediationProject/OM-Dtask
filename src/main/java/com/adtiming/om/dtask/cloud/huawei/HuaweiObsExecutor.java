@@ -11,6 +11,7 @@ import com.obs.services.model.ObsObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +35,15 @@ public class HuaweiObsExecutor {
         } catch (AmazonS3Exception e) {
             LOG.error("upload obj fail, bucket: {}, key: {}, file: {}", bucketName, key, file.getAbsolutePath(), e);
             throw new RuntimeException("upload obj fail", e);
+        }
+    }
+
+    public void createDirectory(String bucketName, String directory) {
+        try {
+            obsClient.putObject(bucketName, directory, new ByteArrayInputStream(new byte[0]));
+        } catch (AmazonS3Exception e) {
+            LOG.error("create directory fail, bucket: {}, directory: {}", bucketName, directory, e);
+            throw new RuntimeException("create directory fail", e);
         }
     }
 
