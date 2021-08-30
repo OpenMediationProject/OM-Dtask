@@ -7,7 +7,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ods_stat_adnetwork
     adn_id          int               COMMENT 'AdNetwork ID',
     country         string            COMMENT 'alpha2',
     instance_id     int,
-    cost            decimal(20, 8)    COMMENT ' COST '
+    cost            decimal(38, 18)    COMMENT ' COST '
 ) PARTITIONED BY (
     y string,
     m string,

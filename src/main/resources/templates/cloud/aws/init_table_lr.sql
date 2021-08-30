@@ -50,9 +50,10 @@ CREATE EXTERNAL TABLE IF NOT EXISTS lr
     scene       int,
     status      int,
     msg         string,
-    price       decimal(20, 8),
+    price       decimal(38, 18),
     adType      int,
     bid         int,
+    ruleId      int,
 
     init        int,
     wfReq       int,
@@ -68,10 +69,10 @@ CREATE EXTERNAL TABLE IF NOT EXISTS lr
     impr        int,
     bidReq      int,
     bidRes      int,
-    bidResPrice decimal(20, 8),
+    bidResPrice decimal(38, 18),
     bidWin      int,
-    bidWinPrice decimal(20, 8),
-    revenue     decimal(20, 8)
+    bidWinPrice decimal(38, 18),
+    revenue     decimal(38, 18)
 ) PARTITIONED BY (
     y string,
     m string,

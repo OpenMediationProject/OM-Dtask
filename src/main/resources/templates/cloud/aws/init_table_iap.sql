@@ -43,9 +43,9 @@ CREATE EXTERNAL TABLE IF NOT EXISTS iap
     pubAppId       int               COMMENT '',
     cur            string            COMMENT 'currency',
 
-    iap            decimal(20, 8)    COMMENT 'iap price',
-    iapt           decimal(20, 8)    COMMENT 'iap total price',
-    iapUsd         decimal(20, 8),
+    iap            decimal(38, 18)    COMMENT 'iap price',
+    iapt           decimal(38, 18)    COMMENT 'iap total price',
+    iapUsd         decimal(38, 18),
     status         int,
     msg            string
 ) PARTITIONED BY (

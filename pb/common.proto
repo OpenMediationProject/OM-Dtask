@@ -15,6 +15,7 @@ enum AdType {
     Interstitial = 3; // 插屏
     Splash = 4; // 开屏
     CrossPromotion = 5; // 交叉推广
+    RewardedInterstitial = 6; // 激励插屏
 }
 
 message Country {

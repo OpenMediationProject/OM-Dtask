@@ -306,7 +306,7 @@ public class SDKCacheBuilder extends PbBuiler {
 
     void buildAdNetowrk() {
         build("om_adnetwork", cfg.dir, out -> {
-            String sql = "SELECT id,name,class_name,type,sdk_version,bid_endpoint,descn FROM om_adnetwork WHERE status=1";
+            String sql = "SELECT id,name,class_name,type,sdk_version,bid_endpoint,descn,bid_type,expired_time FROM om_adnetwork WHERE status=1";
             jdbcTemplate.query(sql, rs -> {
                 AdNetworkPB.AdNetwork adn = AdNetworkPB.AdNetwork.newBuilder()
                         .setId(rs.getInt("id"))
@@ -316,6 +316,8 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setSdkVersion(StringUtils.defaultIfEmpty(rs.getString("sdk_version"), ""))
                         .setBidEndpoint(StringUtils.defaultIfEmpty(rs.getString("bid_endpoint"), ""))
                         .setDescn(StringUtils.defaultIfEmpty(rs.getString("descn"), ""))
+                        .setBidType(rs.getInt("bid_type"))
+                        .setExpiredTime(rs.getInt("expired_time"))
                         .build();
                 out.writeDelimited(adn);
             });
@@ -441,25 +443,60 @@ public class SDKCacheBuilder extends PbBuiler {
 
     void buildInstanceRule() {
         build("om_instance_rule", cfg.dir, out -> {
-            String weightSql = "select a.rule_id,a.instance_id,a.sort_type,a.priority,a.weight" +
+            String weightSql = "select a.rule_id,a.instance_id,a.sort_type,a.priority,a.weight,a.group_id,d.hb_status" +
                     " from om_placement_rule_instance a" +
                     " left join om_placement_rule b on (a.rule_id=b.id)" +
                     " left join om_placement c on (b.placement_id=c.id)" +
                     " left join om_instance d on (a.instance_id=d.id)" +
+                    " left join om_placement_rule_group e on (a.group_id=e.id)" +
                     " where a.status=1 and b.status=1 and c.status=1 and d.status=1";
             Map<Integer, Map<Integer, Integer>> ruleInstanceWeight = new HashMap<>(1000);
+            Map<Integer, Map<Integer, List<AdNetworkPB.InstanceRuleMediation>>> ruleGroupInstance = new HashMap<>(1000);
             jdbcTemplate.query(weightSql, rs -> {
                 int sortType = rs.getInt("sort_type");
+                int ruleId = rs.getInt("rule_id");
+                int instanceId = rs.getInt("instance_id");
+                int groupId = rs.getInt("group_id");
+                AdNetworkPB.InstanceRuleMediation.Builder irm = AdNetworkPB.InstanceRuleMediation.newBuilder()
+                        .setRuleId(ruleId)
+                        .setGroupId(groupId)
+                        .setInstanceId(instanceId);
                 if (sortType == 1) {//绝对优先级
                     ruleInstanceWeight.computeIfAbsent(rs.getInt("rule_id"), k -> new HashMap<>(10))
                             .put(rs.getInt("instance_id"), rs.getInt("priority"));
+                    ruleGroupInstance.computeIfAbsent(ruleId, k -> new HashMap<>())
+                            .computeIfAbsent(groupId, k -> new ArrayList<>())
+                            .add(irm.setPriority(rs.getInt("priority")).build());
                 } else {
                     int weight = rs.getInt("weight");
                     if (weight > 0) {
                         ruleInstanceWeight.computeIfAbsent(rs.getInt("rule_id"), k -> new HashMap<>(10))
                                 .put(rs.getInt("instance_id"), weight);
+                        ruleGroupInstance.computeIfAbsent(ruleId, k -> new HashMap<>())
+                                .computeIfAbsent(groupId, k -> new ArrayList<>())
+                                .add(irm.setPriority(weight).build());
                     }
                 }
+            });
+
+            String groupSql = "select a.id,a.rule_id,a.group_level,a.auto_switch" +
+                    " from om_placement_rule_group a" +
+                    " left join om_placement_rule b on (a.rule_id=b.id)" +
+                    " left join om_placement c on (b.placement_id=c.id)" +
+                    " where b.status=1 and c.status=1";
+            Map<Integer, List<AdNetworkPB.InstanceRuleGroup>> ruleGroupMap = new HashMap<>(1000);
+            jdbcTemplate.query(groupSql, rs -> {
+                int ruleId = rs.getInt("rule_id");
+                int groupId = rs.getInt("id");
+                AdNetworkPB.InstanceRuleGroup.Builder prg = AdNetworkPB.InstanceRuleGroup.newBuilder()
+                        .setRuleId(ruleId)
+                        .setGroupId(groupId)
+                        .setGroupLevel(rs.getInt("group_level"))
+                        .setAutoSwitch(rs.getInt("auto_switch"))
+                        .addAllInstanceWeight(ruleGroupInstance.getOrDefault(ruleId, Collections.emptyMap())
+                                .getOrDefault(groupId, Collections.emptyList()));
+                ruleGroupMap.computeIfAbsent(ruleId, k -> new ArrayList<>())
+                        .add(prg.build());
             });
 
             String sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.placement_id,e.countries,a.ab_test," +
@@ -512,6 +549,19 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setRequireDid(rs.getInt("require_did"))
                         .setName(StringUtils.defaultString(rs.getString("name")))
                         .setAlgorithmId(rs.getInt("algorithm_id"));
+
+                List<AdNetworkPB.InstanceRuleMediation> biddingIns = ruleGroupInstance.getOrDefault(ruleId, Collections.emptyMap())
+                        .getOrDefault(0, Collections.emptyList());
+                if (!biddingIns.isEmpty()) {
+                    AdNetworkPB.InstanceRuleGroup.Builder prg = AdNetworkPB.InstanceRuleGroup.newBuilder()
+                            .setRuleId(ruleId)
+                            .setGroupId(0)
+                            .setGroupLevel(0)
+                            .setAutoSwitch(1)
+                            .addAllInstanceWeight(biddingIns);
+                    sb.addGroups(prg.build());
+                }
+                sb.addAllGroups(ruleGroupMap.getOrDefault(ruleId, Collections.emptyList()));
                 if (osvExp.hasRange()) {
                     sb.addAllOsvRange(osvExp.getRanges());
                 }

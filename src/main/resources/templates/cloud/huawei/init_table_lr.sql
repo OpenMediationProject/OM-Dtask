@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS lr
     price       decimal(20, 8),
     adType      int,
     bid         int,
+    ruleId      int,
 
     init        int,
     wfReq       int,

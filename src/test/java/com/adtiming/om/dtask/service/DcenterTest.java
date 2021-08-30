@@ -22,7 +22,7 @@ public class DcenterTest {
 
     @Test
     public void testHourly() {
-        LocalDateTime executeDateTime = LocalDateTime.of(2020, 12, 1, 8, 0);
+        LocalDateTime executeDateTime = LocalDateTime.of(2021, 8, 23, 7, 0);
         dcenterJob.collectDatas(executeDateTime);
         dcenterJob.commonReport(executeDateTime);
         dcenterJob.cpReport(executeDateTime);

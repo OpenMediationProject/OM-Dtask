@@ -36,7 +36,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS cptk (
     pubAppId       int               COMMENT 'Placement.pubAppId',
     adType         int               COMMENT 'Placement.AdType',
     billingType    int               COMMENT 'Campaign.billingType',
-    cost           decimal(20, 8)    COMMENT '根据 price 计算 cost'
+    cost           decimal(38, 18)    COMMENT '根据 price 计算 cost'
 ) PARTITIONED BY (
     y string,
     m string,
