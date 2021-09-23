@@ -180,6 +180,8 @@ public class HuaweiCloudJob implements CloudJob {
     public void userReport(LocalDate executeDate) {
         handleDailyReport(executeDate, "user", "stat_dau");
 
+        handleDailyReport(executeDate, "user_abtest", "stat_dau_abtest");
+
         String dauDimensionsConf = dictManager.val("/om/dau_dimensions");
         if (StringUtils.isEmpty(dauDimensionsConf)) {
             LOG.info("there has no dau dimensions conf!");

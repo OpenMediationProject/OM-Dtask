@@ -115,6 +115,8 @@ message InstanceRule {
     map<string, CustomTag> custom_tags = 34;
     int32 algorithm_id = 35; // ECPM预估算法ID om_ecpm_algorithm.id
     repeated InstanceRuleGroup groups = 36;
+    int32 ab_test = 37; // A/B Test开关 0:Off,1:On
+    InstanceRuleAbt rule_abt = 38; // A/B Test比例配置
 }
 
 message InstanceRuleGroup {
@@ -123,6 +125,7 @@ message InstanceRuleGroup {
     int32 group_level = 3;
     int32 auto_switch = 4;
     repeated InstanceRuleMediation instance_weight = 5;
+    int32 ab_test = 6;//A/B Model,0:None,1:A,2:B
 }
 
 message InstanceRuleMediation {
@@ -130,6 +133,15 @@ message InstanceRuleMediation {
     int32 group_id = 2;
     int32 instance_id = 3;
     int32 priority = 4;
+    int32 ab_test = 5;//A/B Model,0:None,1:A,2:B
+}
+
+message InstanceRuleAbt {
+    int32 id = 1;
+    int32 rule_id = 2;
+    string name = 3;
+    int32 a_per = 4;
+    int32 b_per = 5;
 }
 
 message CustomTag {

@@ -125,7 +125,7 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setCreateTime((int) (rs.getTimestamp("create_time").getTime() / 1000))
                         .setImprCallbackSwitch(rs.getInt("impr_callback_switch"))
                         .addAllBlockRules(appBlocRule.getOrDefault(pubAppId, Collections.emptyList()));
-                        //.addAllSegments(appSegments.getOrDefault(pubAppId, Collections.emptyList()));
+                //.addAllSegments(appSegments.getOrDefault(pubAppId, Collections.emptyList()));
                 if (StringUtils.isNoneBlank(sdkEventIds)) {
                     pb.addAllEventIds(Arrays.stream(sdkEventIds.split(","))
                             .map(NumberUtils::toInt).collect(Collectors.toList()));
@@ -443,15 +443,16 @@ public class SDKCacheBuilder extends PbBuiler {
 
     void buildInstanceRule() {
         build("om_instance_rule", cfg.dir, out -> {
-            String weightSql = "select a.rule_id,a.instance_id,a.sort_type,a.priority,a.weight,a.group_id,d.hb_status" +
+            String weightSql = "select a.rule_id,a.instance_id,a.sort_type,a.priority,a.weight,a.group_id,d.hb_status,a.ab_test" +
                     " from om_placement_rule_instance a" +
                     " left join om_placement_rule b on (a.rule_id=b.id)" +
                     " left join om_placement c on (b.placement_id=c.id)" +
                     " left join om_instance d on (a.instance_id=d.id)" +
                     " left join om_placement_rule_group e on (a.group_id=e.id)" +
-                    " where a.status=1 and b.status=1 and c.status=1 and d.status=1";
+                    " where a.status=1 and b.status=1 and c.status=1 and d.status=1" +
+                    " order by a.rule_id,a.group_id,a.priority";
             Map<Integer, Map<Integer, Integer>> ruleInstanceWeight = new HashMap<>(1000);
-            Map<Integer, Map<Integer, List<AdNetworkPB.InstanceRuleMediation>>> ruleGroupInstance = new HashMap<>(1000);
+            Map<Integer, Map<Integer, Map<Integer, List<AdNetworkPB.InstanceRuleMediation>>>> ruleGroupInstance = new HashMap<>(1000);
             jdbcTemplate.query(weightSql, rs -> {
                 int sortType = rs.getInt("sort_type");
                 int ruleId = rs.getInt("rule_id");
@@ -460,12 +461,14 @@ public class SDKCacheBuilder extends PbBuiler {
                 AdNetworkPB.InstanceRuleMediation.Builder irm = AdNetworkPB.InstanceRuleMediation.newBuilder()
                         .setRuleId(ruleId)
                         .setGroupId(groupId)
-                        .setInstanceId(instanceId);
+                        .setInstanceId(instanceId)
+                        .setAbTest(rs.getInt("ab_test"));
                 if (sortType == 1) {//绝对优先级
                     ruleInstanceWeight.computeIfAbsent(rs.getInt("rule_id"), k -> new HashMap<>(10))
                             .put(rs.getInt("instance_id"), rs.getInt("priority"));
                     ruleGroupInstance.computeIfAbsent(ruleId, k -> new HashMap<>())
-                            .computeIfAbsent(groupId, k -> new ArrayList<>())
+                            .computeIfAbsent(groupId, k -> new HashMap<>())
+                            .computeIfAbsent(irm.getAbTest(), k -> new ArrayList<>())
                             .add(irm.setPriority(rs.getInt("priority")).build());
                 } else {
                     int weight = rs.getInt("weight");
@@ -473,13 +476,14 @@ public class SDKCacheBuilder extends PbBuiler {
                         ruleInstanceWeight.computeIfAbsent(rs.getInt("rule_id"), k -> new HashMap<>(10))
                                 .put(rs.getInt("instance_id"), weight);
                         ruleGroupInstance.computeIfAbsent(ruleId, k -> new HashMap<>())
-                                .computeIfAbsent(groupId, k -> new ArrayList<>())
+                                .computeIfAbsent(groupId, k -> new HashMap<>())
+                                .computeIfAbsent(irm.getAbTest(), k -> new ArrayList<>())
                                 .add(irm.setPriority(weight).build());
                     }
                 }
             });
 
-            String groupSql = "select a.id,a.rule_id,a.group_level,a.auto_switch" +
+            String groupSql = "select a.id,a.rule_id,a.group_level,a.auto_switch,a.ab_test" +
                     " from om_placement_rule_group a" +
                     " left join om_placement_rule b on (a.rule_id=b.id)" +
                     " left join om_placement c on (b.placement_id=c.id)" +
@@ -488,22 +492,41 @@ public class SDKCacheBuilder extends PbBuiler {
             jdbcTemplate.query(groupSql, rs -> {
                 int ruleId = rs.getInt("rule_id");
                 int groupId = rs.getInt("id");
+                int abt = rs.getInt("ab_test");
                 AdNetworkPB.InstanceRuleGroup.Builder prg = AdNetworkPB.InstanceRuleGroup.newBuilder()
                         .setRuleId(ruleId)
                         .setGroupId(groupId)
                         .setGroupLevel(rs.getInt("group_level"))
                         .setAutoSwitch(rs.getInt("auto_switch"))
+                        .setAbTest(abt)
                         .addAllInstanceWeight(ruleGroupInstance.getOrDefault(ruleId, Collections.emptyMap())
-                                .getOrDefault(groupId, Collections.emptyList()));
+                                .getOrDefault(groupId, Collections.emptyMap()).getOrDefault(abt, Collections.emptyList()));
                 ruleGroupMap.computeIfAbsent(ruleId, k -> new ArrayList<>())
                         .add(prg.build());
+            });
+
+            String abtSql = "select a.id,a.rule_id,a.name,a.a_per,a.b_per" +
+                    " from om_placement_rule_abt a" +
+                    " left join om_placement_rule b on (a.rule_id=b.id)" +
+                    " left join om_placement c on (b.placement_id=c.id)" +
+                    " where a.status=1 and b.status=1 and c.status=1";
+            Map<Integer, AdNetworkPB.InstanceRuleAbt> ruleAbtMap = new HashMap<>(1000);
+            jdbcTemplate.query(abtSql, rs -> {
+                int ruleId = rs.getInt("rule_id");
+                AdNetworkPB.InstanceRuleAbt.Builder abt = AdNetworkPB.InstanceRuleAbt.newBuilder()
+                        .setId(rs.getInt("id"))
+                        .setRuleId(ruleId)
+                        .setName(StringUtils.defaultString(rs.getString("name")))
+                        .setAPer(rs.getInt("a_per"))
+                        .setBPer(rs.getInt("b_per"));
+                ruleAbtMap.put(ruleId, abt.build());
             });
 
             String sql = "SELECT a.id,a.publisher_id,a.pub_app_id,a.placement_id,e.countries,a.ab_test," +
                     "a.auto_opt,a.sort_type,a.priority,a.status,a.create_user_id,a.create_time,a.priority," +
                     "e.frequency, e.con_type, e.brand_whitelist, e.brand_blacklist, e.model_whitelist, e.model_blacklist," +
                     "e.gender, e.age_max, e.age_min, e.interest, e.iap_min, e.iap_max, e.channel, e.channel_bow, e.model_type, " +
-                    "e.osv_exp,e.sdkv_exp,e.appv_exp,e.require_did,e.custom_tags,a.name,a.algorithm_id" +
+                    "e.osv_exp,e.sdkv_exp,e.appv_exp,e.require_did,e.custom_tags,a.name,a.algorithm_id,a.ab_test" +
                     " FROM om_placement_rule a" +
                     " left join om_placement b on (a.placement_id=b.id)" +
                     " left join om_publisher_app c on (a.pub_app_id=c.id)" +
@@ -548,18 +571,27 @@ public class SDKCacheBuilder extends PbBuiler {
                         .setChannelBow(rs.getInt("channel_bow") == 1)
                         .setRequireDid(rs.getInt("require_did"))
                         .setName(StringUtils.defaultString(rs.getString("name")))
-                        .setAlgorithmId(rs.getInt("algorithm_id"));
+                        .setAlgorithmId(rs.getInt("algorithm_id"))
+                        .setAbTest(rs.getInt("ab_test"));
 
-                List<AdNetworkPB.InstanceRuleMediation> biddingIns = ruleGroupInstance.getOrDefault(ruleId, Collections.emptyMap())
-                        .getOrDefault(0, Collections.emptyList());
+                AdNetworkPB.InstanceRuleAbt abt = ruleAbtMap.get(ruleId);
+                if (abt != null) {
+                    sb.setRuleAbt(abt);
+                }
+
+                Map<Integer, List<AdNetworkPB.InstanceRuleMediation>> biddingIns = ruleGroupInstance.getOrDefault(ruleId, Collections.emptyMap())
+                        .getOrDefault(0, Collections.emptyMap());
                 if (!biddingIns.isEmpty()) {
-                    AdNetworkPB.InstanceRuleGroup.Builder prg = AdNetworkPB.InstanceRuleGroup.newBuilder()
-                            .setRuleId(ruleId)
-                            .setGroupId(0)
-                            .setGroupLevel(0)
-                            .setAutoSwitch(1)
-                            .addAllInstanceWeight(biddingIns);
-                    sb.addGroups(prg.build());
+                    biddingIns.forEach((abModel, bidIns) -> {
+                        AdNetworkPB.InstanceRuleGroup.Builder prg = AdNetworkPB.InstanceRuleGroup.newBuilder()
+                                .setRuleId(ruleId)
+                                .setGroupId(0)
+                                .setGroupLevel(0)
+                                .setAutoSwitch(1)
+                                .setAbTest(abModel)
+                                .addAllInstanceWeight(bidIns);
+                        sb.addGroups(prg.build());
+                    });
                 }
                 sb.addAllGroups(ruleGroupMap.getOrDefault(ruleId, Collections.emptyList()));
                 if (osvExp.hasRange()) {

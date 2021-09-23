@@ -152,7 +152,7 @@ public class AwsCloudJob implements CloudJob {
 
     @Override
     public void commonReport(LocalDateTime executeDateTime) {
-        String mysqlTableColumns = "day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,scene_id,adn_id,abt,bid,rule_id,app_version,sdk_version,os_version,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr,bid_req,bid_resp,bid_resp_price,bid_win,bid_win_price ";
+        String mysqlTableColumns = "day,hour,country,platform,publisher_id,pub_app_id,placement_id,instance_id,scene_id,adn_id,abt,abt_id,bid,rule_id,app_version,sdk_version,os_version,waterfall_request,waterfall_filled,instance_request,instance_filled,video_start,video_complete,called_show,is_ready_true,is_ready_false,click,impr,bid_req,bid_resp,bid_resp_price,bid_win,bid_win_price ";
         handleHourlyReport(executeDateTime, "common", "stat_lr", mysqlTableColumns);
     }
 
@@ -171,6 +171,8 @@ public class AwsCloudJob implements CloudJob {
     @Override
     public void userReport(LocalDate executeDate) {
         handleDailyReport(executeDate, "user", "stat_dau", "day,publisher_id,pub_app_id,platform,country,app_version,sdk_version,os_version,ip_count,did_count,dau,deu ");
+
+        handleDailyReport(executeDate, "user_abtest", "stat_dau_abtest", "day,publisher_id,pub_app_id,platform,abt,abt_id,country,app_version,sdk_version,os_version,ip_count,did_count,dau,deu ");
 
         String dauDimensionsConf = dictManager.val("/om/dau_dimensions");
         if (StringUtils.isEmpty(dauDimensionsConf)) {

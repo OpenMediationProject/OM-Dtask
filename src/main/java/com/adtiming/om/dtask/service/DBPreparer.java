@@ -29,6 +29,7 @@ public class DBPreparer {
             "stat_lr",
             "stat_cp",
             "stat_dau",
+            "stat_dau_abtest",
             "stat_dau_adn",
             "stat_dau_placement",
             "stat_dau_adn_placement",

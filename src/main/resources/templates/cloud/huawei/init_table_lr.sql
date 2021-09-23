@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS lr
     adType      int,
     bid         int,
     ruleId      int,
+    abtId       int,
 
     init        int,
     wfReq       int,
