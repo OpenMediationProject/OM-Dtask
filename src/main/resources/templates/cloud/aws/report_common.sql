@@ -38,6 +38,7 @@ WHERE serverTs IS NOT NULL
   AND m = '[(${month})]'
   AND d = '[(${day})]'
   AND h = '[(${hour})]'
+  AND type != 1
 GROUP BY date_format(from_unixtime(serverTs / 1000, 'UTC'), '%Y-%m-%d'),
          date_format(from_unixtime(serverTs / 1000, 'UTC'), '%H'),
          country,

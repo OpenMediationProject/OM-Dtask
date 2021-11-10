@@ -41,6 +41,7 @@ WHERE serverTs IS NOT NULL
   AND m = '[(${month})]'
   AND d = '[(${day})]'
   AND h = '[(${hour})]'
+  AND type != 1
 GROUP BY FROM_UNIXTIME(serverTs / 1000, 'yyyy-MM-dd'),
     FROM_UNIXTIME(serverTs / 1000, 'HH'),
     country,

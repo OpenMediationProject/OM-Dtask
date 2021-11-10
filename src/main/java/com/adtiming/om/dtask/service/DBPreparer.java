@@ -57,7 +57,9 @@ public class DBPreparer {
             "report_mint",
             "report_helium",
             "report_sigmob",
-            "report_kuaishou"
+            "report_kuaishou",
+            "report_pubnative",
+            "report_shareit"
     };
 
     @Resource
